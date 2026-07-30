@@ -1,0 +1,13 @@
+{
+  "name": "campus-market-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Campus Market — buyers, sellers, products, chat, orders, and management dashboard.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
