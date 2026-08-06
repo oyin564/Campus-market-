@@ -1,5 +1,4 @@
 const crypto = require("node:crypto");
-const db = require("./db");
 
 function hashSecret(secret, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.scryptSync(String(secret), salt, 64).toString("hex");
@@ -13,29 +12,56 @@ function verifySecret(secret, salt, expectedHash) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function makeToken() {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-function createSession(userType, userId) {
-  const token = makeToken();
-  db.prepare(
-    "INSERT INTO sessions (token, user_type, user_id, created_at) VALUES (?, ?, ?, ?)"
-  ).run(token, userType, userId, Date.now());
-  return token;
-}
-
-function getSession(token) {
-  if (!token) return null;
-  return db.prepare("SELECT * FROM sessions WHERE token = ?").get(token) || null;
-}
-
 function makeId(prefix) {
   return `${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
 function makeLoginCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+/**
+ * Self-contained, signed session tokens (HMAC-SHA256) — no session table
+ * needed, so logins survive server restarts. Set SESSION_SECRET as an
+ * environment variable in production; a random fallback is used otherwise
+ * (which means existing sessions won't survive a restart until you set one).
+ */
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+if (!process.env.SESSION_SECRET) {
+  console.warn("[auth] SESSION_SECRET not set — using a random secret for this run. Set SESSION_SECRET as an env var so logins survive restarts.");
+}
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function base64url(input) {
+  return Buffer.from(input).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function base64urlDecode(input) {
+  input = input.replace(/-/g, "+").replace(/_/g, "/");
+  while (input.length % 4) input += "=";
+  return Buffer.from(input, "base64").toString("utf8");
+}
+function sign(payload) {
+  return crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
+}
+
+function createSession(userType, userId) {
+  const payload = JSON.stringify({ t: userType, u: userId, e: Date.now() + SESSION_TTL_MS });
+  const encoded = base64url(payload);
+  const signature = sign(encoded);
+  return `${encoded}.${signature}`;
+}
+
+function getSession(token) {
+  if (!token || !token.includes(".")) return null;
+  const [encoded, signature] = token.split(".");
+  const expectedSig = sign(encoded);
+  const a = Buffer.from(signature || "", "hex");
+  const b = Buffer.from(expectedSig, "hex");
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  let payload;
+  try { payload = JSON.parse(base64urlDecode(encoded)); } catch { return null; }
+  if (!payload.e || Date.now() > payload.e) return null;
+  return { user_type: payload.t, user_id: payload.u };
 }
 
 /**
@@ -78,4 +104,4 @@ async function sendLoginCodeEmail(toEmail, code) {
   }
 }
 
-module.exports = { hashSecret, verifySecret, makeToken, createSession, getSession, makeId, makeLoginCode, sendLoginCodeEmail };
+module.exports = { hashSecret, verifySecret, createSession, getSession, makeId, makeLoginCode, sendLoginCodeEmail };
