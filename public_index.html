@@ -4,1123 +4,750 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Campus Market</title>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-  body { margin: 0; }
-  .cm-display { font-family: 'Permanent Marker', cursive; letter-spacing: 0.5px; }
-  .cm-hand { font-family: 'Caveat', cursive; }
-  .cm-body { font-family: 'Inter', sans-serif; }
-  .cm-mono { font-family: 'Space Mono', monospace; }
-  .cm-card { background: #FBF7EC; box-shadow: 0 6px 14px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.4) inset; transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .cm-card:hover { transform: translateY(-3px) rotate(0deg) !important; box-shadow: 0 12px 22px rgba(0,0,0,0.32), 0 1px 0 rgba(255,255,255,0.4) inset; }
-  .cm-tape { position: absolute; width: 46px; height: 18px; background: rgba(240, 200, 70, 0.55); box-shadow: 0 1px 2px rgba(0,0,0,0.15); top: -9px; left: 50%; transform: translateX(-50%) rotate(-3deg); }
-  .cm-chalk-border { border: 2px dashed rgba(243,240,231,0.35); }
-  .cm-thumb { width: 100%; height: 96px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: #EFE9D8; }
-  .cm-scrollbar::-webkit-scrollbar { width: 8px; }
-  .cm-scrollbar::-webkit-scrollbar-thumb { background: rgba(243,240,231,0.25); border-radius: 8px; }
-  @keyframes cm-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .cm-fade-up { animation: cm-fade-up 0.35s ease both; }
-  @keyframes cm-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-  .cm-slide-in { animation: cm-slide-in 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #1F3B31; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 60px; }
+  .topbar { background: #213F34; border-bottom: 1px solid rgba(243,240,231,0.15); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .brand { color: #F0C846; font-weight: 800; font-size: 20px; }
+  .tabs { display: flex; gap: 6px; background: rgba(243,240,231,0.08); border-radius: 999px; padding: 4px; }
+  .tab-btn { border: none; background: transparent; color: #F3F0E7; padding: 7px 14px; border-radius: 999px; font-size: 14px; cursor: pointer; }
+  .tab-btn.active { background: #F0C846; color: #20301f; font-weight: 700; }
+  .gear-btn { border: none; background: rgba(243,240,231,0.08); color: rgba(243,240,231,0.7); width: 34px; height: 34px; border-radius: 999px; cursor: pointer; font-size: 16px; }
+  h1, h2, h3 { color: #F3F0E7; }
+  .hero { text-align: center; padding: 30px 0 10px; }
+  .hero .sub { color: #8FC1D4; font-size: 20px; margin-bottom: 4px; }
+  .hero h2 { font-size: 26px; line-height: 1.3; margin: 0; }
+  .hero h2 .accent { color: #E8735F; }
+  .card { background: #FBF7EC; border-radius: 8px; padding: 16px; box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+  .field { margin-bottom: 10px; text-align: left; }
+  .field label { display: block; font-size: 12px; color: #5a5a5a; margin-bottom: 4px; }
+  .light-label { color: rgba(243,240,231,0.65); }
+  input, select, textarea { width: 100%; padding: 9px 11px; border-radius: 6px; border: 1px solid #d8cfb4; font-size: 14px; font-family: inherit; }
+  .dark-input { background: rgba(243,240,231,0.08); border: 1px solid rgba(243,240,231,0.3); color: #F3F0E7; }
+  .btn { border: none; border-radius: 6px; padding: 10px 16px; font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; }
+  .btn-primary { background: #20301f; color: #F0C846; }
+  .btn-accent { background: #F0C846; color: #20301f; }
+  .btn-ghost { background: rgba(243,240,231,0.1); color: #F3F0E7; }
+  .btn-small { width: auto; padding: 6px 12px; font-size: 12px; }
+  .msg-error { color: #E8735F; font-size: 13px; margin: 6px 0; }
+  .msg-info { color: rgba(243,240,231,0.7); font-size: 14px; text-align: center; margin-bottom: 16px; }
+  .center { text-align: center; }
+  .searchbar { display: flex; align-items: center; gap: 8px; background: rgba(243,240,231,0.06); border: 2px dashed rgba(243,240,231,0.35); border-radius: 10px; padding: 10px 12px; margin: 20px 0 12px; }
+  .searchbar input { border: none; background: transparent; color: #F3F0E7; outline: none; font-size: 15px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .chip { border: 1px solid rgba(243,240,231,0.25); background: transparent; color: #F3F0E7; padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; }
+  .chip.active { background: #F0C846; border-color: #F0C846; color: #20301f; font-weight: 700; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 480px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .product-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; background: #EFE9D8; }
+  .product-card .icon { font-size: 28px; margin-bottom: 6px; }
+  .product-card h3 { font-size: 15px; margin: 0 0 4px; color: #2b2b2b; }
+  .product-card p { font-size: 12px; color: #5a5a5a; margin: 0 0 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .price { font-weight: 800; color: #2b2b2b; font-family: monospace; }
+  .vendor-tag { font-size: 11px; background: #EFE9D8; color: #5a5a5a; padding: 2px 8px; border-radius: 999px; }
+  .section-title { color: #F0C846; font-size: 14px; font-weight: 700; margin: 24px 0 10px; }
+  .link-btn { background: none; border: none; color: rgba(243,240,231,0.55); font-size: 12px; cursor: pointer; }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 40; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-backdrop.side { justify-content: flex-end; padding: 0; }
+  .modal-card { background: #FBF7EC; border-radius: 8px; padding: 18px; max-width: 400px; width: 100%; max-height: 88vh; overflow-y: auto; }
+  .side-panel { background: #FBF7EC; width: 100%; max-width: 420px; height: 100%; display: flex; flex-direction: column; }
+  .chat-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #e5ddc8; }
+  .chat-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .bubble { max-width: 78%; padding: 8px 12px; border-radius: 16px; font-size: 14px; }
+  .bubble.buyer { align-self: flex-end; background: #20301f; color: #F0C846; }
+  .bubble.other { align-self: flex-start; background: #EFE9D8; color: #2b2b2b; }
+  .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #e5ddc8; }
+  .chat-input-row input { flex: 1; border-radius: 999px; }
+  .icon-btn { border: none; background: #20301f; color: #F0C846; width: 40px; height: 40px; border-radius: 999px; cursor: pointer; flex-shrink: 0; }
+  .stat-card { background: #FBF7EC; border-radius: 8px; padding: 12px; }
+  .stat-label { font-size: 11px; color: #7a7a7a; }
+  .stat-value { font-size: 18px; font-weight: 800; color: #2b2b2b; font-family: monospace; }
+  .order-item { background: #FBF7EC; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  a { color: inherit; }
+  .close-x { background: none; border: none; font-size: 18px; cursor: pointer; color: #7a7a7a; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useMemo } = React;
+<script>
+"use strict";
 
-/* ---------------------------------------------------------
-   API client — talks to the real backend (server.js).
-   Change the base URL below if you deploy the backend elsewhere.
---------------------------------------------------------- */
-const DEFAULT_API_BASE = ""; // same origin as this page — works locally and once deployed, no CORS needed
-function getApiBase() { return localStorage.getItem("cm_api_base") || DEFAULT_API_BASE; }
+/* ---------------- API base ---------------- */
+function getApiBase() { return localStorage.getItem("cm_api_base") || ""; }
 function setApiBase(v) { localStorage.setItem("cm_api_base", v); }
 
-async function api(path, { method = "GET", body, token } = {}) {
-  const res = await fetch(`${getApiBase()}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
+async function api(path, opts) {
+  opts = opts || {};
+  var headers = { "Content-Type": "application/json" };
+  if (opts.token) headers["Authorization"] = "Bearer " + opts.token;
+  var res = await fetch(getApiBase() + path, {
+    method: opts.method || "GET",
+    headers: headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
-  let data = {};
-  try { data = await res.json(); } catch {}
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  var data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error(data.error || ("Request failed (" + res.status + ")"));
   return data;
 }
 
 function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function () { resolve(reader.result); };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
-const money = (n) => `₦${Number(n || 0).toLocaleString()}`;
-const CATEGORIES = ["Snacks & Drinks", "Books & Notes", "Stationery & Printing", "Clothing", "Tech & Repairs", "Other"];
-const DELIVERY_FEE = 500;
+function money(n) { return "\u20A6" + Number(n || 0).toLocaleString(); }
+function esc(s) {
+  var d = document.createElement("div");
+  d.textContent = s == null ? "" : String(s);
+  return d.innerHTML;
+}
+var CATEGORIES = ["Snacks & Drinks", "Books & Notes", "Stationery & Printing", "Clothing", "Tech & Repairs", "Other"];
+var DELIVERY_FEE = 500;
 
-/* ------------------------------ Theming ------------------------------ */
-const BOARD_BG = "#1F3B31";
-const BOARD_BG_2 = "#213F34";
-const CHALK = "#F3F0E7";
-const CHALK_YELLOW = "#F0C846";
-const CHALK_CORAL = "#E8735F";
-const CHALK_BLUE = "#8FC1D4";
-const CARD_PAPER = "#FBF7EC";
+/* ---------------- Global state ---------------- */
+var S = {
+  role: "buyer",
+  buyerAuth: loadBuyerAuth(),
+  vendorAuth: loadVendorAuth(),
+  ownerToken: localStorage.getItem("cm_owner_token") || null,
+  products: [],
+  vendors: [],
+  query: "",
+  category: "All",
+  activeProduct: null,
+  vendorStage: "pick", // pick | auth | dashboard
+  vendorSelected: null,
+  vendorIsNew: false,
+};
 
-/* --------------------------------- App --------------------------------- */
-function App() {
-  const [role, setRole] = useState("buyer");
-  const [buyerAuth, setBuyerAuth] = useState(() => {
-    const token = localStorage.getItem("cm_buyer_token");
-    const username = localStorage.getItem("cm_buyer_username");
-    const displayName = localStorage.getItem("cm_buyer_displayname");
-    return token && username ? { token, username, displayName } : null;
+function loadBuyerAuth() {
+  var t = localStorage.getItem("cm_buyer_token"), u = localStorage.getItem("cm_buyer_username"), d = localStorage.getItem("cm_buyer_displayname");
+  return (t && u) ? { token: t, username: u, displayName: d } : null;
+}
+function saveBuyerAuth(a) {
+  localStorage.setItem("cm_buyer_token", a.token);
+  localStorage.setItem("cm_buyer_username", a.username);
+  localStorage.setItem("cm_buyer_displayname", a.displayName);
+  S.buyerAuth = a;
+}
+function clearBuyerAuth() {
+  localStorage.removeItem("cm_buyer_token"); localStorage.removeItem("cm_buyer_username"); localStorage.removeItem("cm_buyer_displayname");
+  S.buyerAuth = null;
+}
+function loadVendorAuth() {
+  var t = localStorage.getItem("cm_vendor_token"), id = localStorage.getItem("cm_vendor_id"), n = localStorage.getItem("cm_vendor_name"), tag = localStorage.getItem("cm_vendor_tag");
+  return (t && id) ? { token: t, id: id, name: n, tag: tag } : null;
+}
+function saveVendorAuth(a) {
+  localStorage.setItem("cm_vendor_token", a.token);
+  localStorage.setItem("cm_vendor_id", a.id);
+  localStorage.setItem("cm_vendor_name", a.name);
+  localStorage.setItem("cm_vendor_tag", a.tag || "");
+  S.vendorAuth = a;
+}
+function clearVendorAuth() {
+  localStorage.removeItem("cm_vendor_token"); localStorage.removeItem("cm_vendor_id"); localStorage.removeItem("cm_vendor_name"); localStorage.removeItem("cm_vendor_tag");
+  S.vendorAuth = null;
+}
+
+var app = document.getElementById("app");
+function render() { app.innerHTML = renderRoot(); }
+function $(id) { return document.getElementById(id); }
+function val(id) { var e = $(id); return e ? e.value : ""; }
+
+async function refreshData() {
+  try {
+    var p = await api("/api/products");
+    var v = await api("/api/vendors");
+    S.products = p.products || [];
+    S.vendors = v.vendors || [];
+  } catch (e) { console.error("load failed", e); }
+  render();
+}
+
+function vendorOf(id) {
+  for (var i = 0; i < S.vendors.length; i++) if (S.vendors[i].id === id) return S.vendors[i];
+  return { id: id, name: "Unknown seller", tag: "" };
+}
+
+/* ---------------- Root render ---------------- */
+function renderRoot() {
+  var html = topBar();
+  if (S.role === "buyer") {
+    html += S.buyerAuth ? buyerHome() : buyerGate();
+  } else if (S.role === "vendor") {
+    html += vendorArea();
+  } else {
+    html += ownerArea();
+  }
+  if (S.activeProduct && S.buyerAuth) html += chatPanel();
+  return html;
+}
+
+function topBar() {
+  return (
+    '<div class="topbar">' +
+      '<div class="brand">\uD83C\uDFEB Campus Market</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div class="tabs">' +
+          '<button class="tab-btn ' + (S.role === "buyer" ? "active" : "") + '" onclick="setRole(\'buyer\')">' + (S.buyerAuth ? ("Hi, " + esc(S.buyerAuth.displayName.split(" ")[0])) : "I&#39;m shopping") + '</button>' +
+          '<button class="tab-btn ' + (S.role === "vendor" ? "active" : "") + '" onclick="setRole(\'vendor\')">\uD83C\uDFEC I sell here</button>' +
+        '</div>' +
+        '<button class="gear-btn" onclick="setRole(\'owner\')" title="Management">\u2699</button>' +
+        '<button class="gear-btn" onclick="openApiSettings()" title="Backend URL">\uD83D\uDD17</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+function setRole(r) { S.role = r; if (r === "vendor" && S.vendorAuth) S.vendorStage = "dashboard"; render(); }
+
+function openApiSettings() {
+  var v = prompt("Backend URL (leave blank if frontend and backend are the same site):", getApiBase());
+  if (v !== null) { setApiBase(v.trim()); refreshData(); }
+}
+
+/* ================= BUYER ================= */
+function buyerGate() {
+  var st = S._gateStage || "form"; // form | verify
+  var mode = S._gateMode || "login"; // login | signup
+
+  if (st === "verify" && S._pendingLogin) {
+    var p = S._pendingLogin;
+    return (
+      '<div class="wrap"><div style="max-width:360px;margin:0 auto;padding-top:40px;" class="center">' +
+        '<h2>Check your email</h2>' +
+        '<p class="msg-info">' + (p.emailSent ? "We emailed you a 6-digit code." : "No mail provider is configured on the backend yet, so here&#39;s the code directly:") + '</p>' +
+        (p.emailSent ? "" : '<div style="background:rgba(240,200,70,0.12);border:1px dashed rgba(240,200,70,0.4);color:#F0C846;border-radius:6px;padding:10px;margin-bottom:14px;font-size:13px;">Demo mode &mdash; code: <strong>' + esc(p.devCode) + '</strong></div>') +
+        '<div class="field"><input id="code-input" placeholder="6-digit code" inputmode="numeric" maxlength="6" style="text-align:center;letter-spacing:4px;" class="dark-input" /></div>' +
+        (S._gateError ? '<p class="msg-error">' + esc(S._gateError) + '</p>' : "") +
+        '<button class="btn btn-accent" onclick="submitVerify()">Verify & log in</button>' +
+        '<div style="margin-top:10px;"><button class="link-btn" onclick="S._gateStage=\'form\';render();">&larr; back</button></div>' +
+      '</div></div>'
+    );
+  }
+
+  return (
+    '<div class="wrap"><div style="max-width:360px;margin:0 auto;padding-top:36px;" class="center">' +
+      '<h2>' + (mode === "login" ? "Log in to shop" : "Create your account") + '</h2>' +
+      '<p class="msg-info">' + (mode === "login" ? "Use your username and PIN &mdash; we&#39;ll email a code to confirm it&#39;s you." : "Pick a unique username &mdash; change your display name anytime after.") + '</p>' +
+      '<div class="tabs" style="max-width:240px;margin:0 auto 16px;">' +
+        '<button class="tab-btn ' + (mode === "login" ? "active" : "") + '" onclick="switchGateMode(\'login\')">Log in</button>' +
+        '<button class="tab-btn ' + (mode === "signup" ? "active" : "") + '" onclick="switchGateMode(\'signup\')">Sign up</button>' +
+      '</div>' +
+      '<div style="text-align:left;">' +
+        '<div class="field"><label class="light-label">Username</label><input id="g-username" class="dark-input" placeholder="e.g. tega_01" /></div>' +
+        (mode === "signup" ? '<div class="field"><label class="light-label">Display name</label><input id="g-displayname" class="dark-input" placeholder="e.g. Tega" /></div>' : "") +
+        (mode === "signup" ? '<div class="field"><label class="light-label">Email</label><input id="g-email" type="email" class="dark-input" placeholder="you@example.com" /></div>' : "") +
+        '<div class="field"><label class="light-label">PIN</label><input id="g-pin" class="dark-input" inputmode="numeric" maxlength="6" placeholder="4-digit PIN" /></div>' +
+        (mode === "signup" ? '<div class="field"><label class="light-label">Confirm PIN</label><input id="g-confirmpin" class="dark-input" inputmode="numeric" maxlength="6" placeholder="Re-enter PIN" /></div>' : "") +
+      '</div>' +
+      (S._gateError ? '<p class="msg-error">' + esc(S._gateError) + '</p>' : "") +
+      '<button class="btn btn-accent" onclick="' + (mode === "login" ? "submitLogin()" : "submitSignup()") + '">' + (mode === "login" ? "Send login code" : "Create account") + '</button>' +
+    '</div></div>'
+  );
+}
+function switchGateMode(m) { S._gateMode = m; S._gateError = ""; render(); }
+
+async function submitSignup() {
+  var body = { username: val("g-username"), displayName: val("g-displayname"), email: val("g-email"), pin: val("g-pin") };
+  if (body.pin !== val("g-confirmpin")) { S._gateError = "PINs don't match."; render(); return; }
+  try {
+    var data = await api("/api/buyers/signup", { method: "POST", body: body });
+    saveBuyerAuth(data);
+    S._gateStage = "form"; S._gateError = "";
+    await refreshData();
+  } catch (e) { S._gateError = e.message; render(); }
+}
+async function submitLogin() {
+  try {
+    var data = await api("/api/buyers/login", { method: "POST", body: { username: val("g-username"), pin: val("g-pin") } });
+    S._pendingLogin = { username: val("g-username"), devCode: data.devCode, emailSent: data.emailSent };
+    S._gateStage = "verify"; S._gateError = "";
+    render();
+  } catch (e) { S._gateError = e.message; render(); }
+}
+async function submitVerify() {
+  try {
+    var data = await api("/api/buyers/verify", { method: "POST", body: { username: S._pendingLogin.username, code: val("code-input") } });
+    saveBuyerAuth(data);
+    S._gateStage = "form";
+    await refreshData();
+  } catch (e) { S._gateError = e.message; render(); }
+}
+
+function buyerHome() {
+  var cats = ["All"].concat(CATEGORIES);
+  var q = S.query.trim().toLowerCase();
+  var filtered = S.products.filter(function (p) {
+    var matchesCat = S.category === "All" || p.category === S.category;
+    var matchesQ = q === "" || p.name.toLowerCase().indexOf(q) >= 0 || p.category.toLowerCase().indexOf(q) >= 0 || (p.desc || "").toLowerCase().indexOf(q) >= 0;
+    return matchesCat && matchesQ;
   });
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [products, setProducts] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
-  const [activeProduct, setActiveProduct] = useState(null);
-  const [showApiSettings, setShowApiSettings] = useState(false);
-
-  async function refreshData() {
-    try {
-      const [p, v] = await Promise.all([api("/api/products"), api("/api/vendors")]);
-      setProducts(p.products || []);
-      setVendors(v.vendors || []);
-      setDataLoaded(true);
-    } catch (e) {
-      console.error("Failed to load data:", e.message);
-      setDataLoaded(true);
-    }
+  var related = [];
+  if (q && filtered.length === 0) {
+    related = S.products.filter(function (p) {
+      return p.name.toLowerCase().split(" ").some(function (w) { return q.indexOf(w) >= 0 || w.indexOf(q) >= 0; });
+    }).slice(0, 4);
   }
 
-  useEffect(() => { refreshData(); }, []);
+  var html = '<div class="wrap">';
+  html += '<div class="hero"><div class="sub">psst &mdash; need something on campus?</div><h2>Search it. Chat the seller. <span class="accent">Get it delivered.</span></h2>';
+  html += '<div style="margin-top:8px;"><button class="link-btn" onclick="switchBuyer()">&#8617; not ' + esc(S.buyerAuth.displayName) + '? switch</button></div></div>';
 
-  function signInBuyer({ token, username, displayName }) {
-    localStorage.setItem("cm_buyer_token", token);
-    localStorage.setItem("cm_buyer_username", username);
-    localStorage.setItem("cm_buyer_displayname", displayName);
-    setBuyerAuth({ token, username, displayName });
-  }
-  function signOutBuyer() {
-    localStorage.removeItem("cm_buyer_token");
-    localStorage.removeItem("cm_buyer_username");
-    localStorage.removeItem("cm_buyer_displayname");
-    setBuyerAuth(null);
-  }
-  function updateDisplayName(newName) {
-    localStorage.setItem("cm_buyer_displayname", newName);
-    setBuyerAuth((p) => ({ ...p, displayName: newName }));
-  }
+  html += '<div class="searchbar">\uD83D\uDD0D <input id="search-input" value="' + esc(S.query) + '" placeholder="Search for snacks, textbooks, printing, repairs..." oninput="onSearchInput(this.value)" /></div>';
 
-  const vendorOf = (id) => vendors.find((v) => v.id === id) || { id, name: "Unknown seller", tag: "" };
+  html += '<div class="chips">';
+  cats.forEach(function (c) {
+    html += '<button class="chip ' + (S.category === c ? "active" : "") + '" onclick="setCategory(\'' + esc(c).replace(/'/g, "\\'") + '\')">' + esc(c) + '</button>';
+  });
+  html += '</div>';
 
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      const matchesCat = category === "All" || p.category === category;
-      const q = query.trim().toLowerCase();
-      const matchesQuery = q === "" || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || (p.desc || "").toLowerCase().includes(q);
-      return matchesCat && matchesQuery;
+  if (S.products.length === 0) {
+    html += '<p class="msg-info">loading the board...</p>';
+  } else if (filtered.length === 0) {
+    html += '<p class="msg-info" style="font-size:18px;">nothing matches "' + esc(S.query) + '" yet</p>';
+    if (related.length) { html += '<div class="section-title">you might mean:</div>' + productGrid(related); }
+  } else {
+    html += '<div class="section-title">All listings</div>' + productGrid(filtered);
+  }
+  html += '</div>';
+  return html;
+}
+function onSearchInput(v) { S.query = v; renderKeepFocus("search-input"); }
+function setCategory(c) { S.category = c; render(); }
+function switchBuyer() { clearBuyerAuth(); render(); }
+
+function renderKeepFocus(inputId) {
+  var el = $(inputId);
+  var pos = el ? el.selectionStart : null;
+  render();
+  var el2 = $(inputId);
+  if (el2) { el2.focus(); if (pos != null) el2.setSelectionRange(pos, pos); }
+}
+
+function productGrid(list) {
+  var html = '<div class="grid">';
+  list.forEach(function (p) {
+    var v = vendorOf(p.vendorId);
+    html += '<div class="card product-card">';
+    if (p.imageUrl) html += '<img src="' + esc(getApiBase() + p.imageUrl) + '" onerror="this.style.display=\'none\'" />';
+    else html += '<div class="icon">' + (p.icon || "\uD83D\uDED2") + '</div>';
+    html += '<h3>' + esc(p.name) + '</h3><p>' + esc(p.desc || "") + '</p>';
+    html += '<div class="row-between"><span class="price">' + money(p.price) + '</span><span class="vendor-tag">' + esc(v.name) + '</span></div>';
+    html += '<button class="btn btn-primary" onclick="openChat(\'' + esc(p.id) + '\')">\uD83D\uDCAC Chat with seller</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function openChat(productId) {
+  var p = S.products.filter(function (x) { return x.id === productId; })[0];
+  if (!p) return;
+  S.activeProduct = p;
+  S._chatMessages = [];
+  S._chatLoading = true;
+  S._showOrderForm = false;
+  S._orderSent = false;
+  render();
+  loadChatMessages();
+}
+function closeChat() { S.activeProduct = null; render(); }
+
+async function loadChatMessages() {
+  try {
+    var data = await api("/api/messages/" + S.activeProduct.id + "/" + S.buyerAuth.username);
+    S._chatMessages = data.messages || [];
+  } catch (e) { console.error(e); }
+  S._chatLoading = false;
+  render();
+}
+async function sendChatMessage() {
+  var text = val("chat-draft").trim();
+  if (!text) return;
+  $("chat-draft").value = "";
+  try {
+    await api("/api/messages", { method: "POST", token: S.buyerAuth.token, body: { productId: S.activeProduct.id, text: text } });
+    await loadChatMessages();
+  } catch (e) { alert(e.message); }
+}
+
+function chatPanel() {
+  var p = S.activeProduct, v = vendorOf(p.vendorId);
+  var html = '<div class="modal-backdrop side" onclick="if(event.target===this)closeChat()"><div class="side-panel">';
+  html += '<div class="chat-header"><button class="close-x" onclick="closeChat()">&larr;</button>';
+  if (p.imageUrl) html += '<img src="' + esc(getApiBase() + p.imageUrl) + '" style="width:36px;height:36px;border-radius:6px;object-fit:cover;" />';
+  else html += '<span style="font-size:22px;">' + (p.icon || "\uD83D\uDED2") + '</span>';
+  html += '<div style="flex:1;"><div style="font-weight:700;font-size:14px;color:#2b2b2b;">' + esc(p.name) + '</div><div style="font-size:12px;color:#7a7a7a;">' + esc(v.name) + ' &middot; ' + esc(v.tag) + '</div></div>';
+  html += '<button class="close-x" onclick="closeChat()">\u2715</button></div>';
+
+  html += '<div class="chat-body">';
+  html += '<div class="msg-info" style="background:#EFE9D8;padding:8px 12px;border-radius:8px;margin:0 auto;max-width:85%;">Chatting about <strong>' + esc(p.name) + '</strong> (' + money(p.price) + '). Agree a price here, then send the order below.</div>';
+  if (S._chatLoading) { html += '<p class="msg-info">loading...</p>'; }
+  else if (S._chatMessages.length === 0) { html += '<p class="msg-info" style="font-size:18px;">say hi to get things moving \uD83D\uDC4B</p>'; }
+  else {
+    S._chatMessages.forEach(function (m) {
+      html += '<div class="bubble ' + (m.sender === "buyer" ? "buyer" : "other") + '">' + esc(m.text) + '</div>';
     });
-  }, [query, category, products]);
+  }
+  html += '</div>';
 
-  const related = useMemo(() => {
-    if (!query.trim() || filtered.length > 0) return [];
-    const q = query.trim().toLowerCase();
-    return products.filter((p) => p.name.toLowerCase().split(" ").some((w) => q.includes(w) || w.includes(q))).slice(0, 4);
-  }, [query, filtered, products]);
+  html += '<div class="chat-input-row"><input id="chat-draft" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChatMessage()" /><button class="icon-btn" onclick="sendChatMessage()">&#10148;</button></div>';
 
-  return (
-    <div className="min-h-screen w-full" style={{ background: BOARD_BG }}>
-      <TopBar role={role} setRole={setRole} buyerAuth={buyerAuth} onOpenApiSettings={() => setShowApiSettings(true)} />
+  html += '<div style="padding:14px;">';
+  if (S._orderSent) {
+    html += '<div style="background:#dff0d8;color:#2b5a2b;border-radius:8px;padding:10px;font-size:14px;">\u2713 Order sent &mdash; ' + esc(v.name) + ' and management have it. Delivery fee is ' + money(DELIVERY_FEE) + ', payable by transfer or cash.</div>';
+  } else {
+    html += '<button class="btn btn-accent" onclick="S._showOrderForm=true;render();">\uD83D\uDCE6 Ready to order &mdash; send delivery details</button>';
+  }
+  html += '</div></div></div>';
 
-      {role === "buyer" ? (
-        !buyerAuth ? (
-          <BuyerGate onSignedIn={signInBuyer} />
-        ) : (
-          <BuyerView
-            buyerAuth={buyerAuth}
-            onSwitchBuyer={signOutBuyer}
-            onUpdateDisplayName={updateDisplayName}
-            query={query} setQuery={setQuery}
-            category={category} setCategory={setCategory}
-            filtered={filtered} related={related}
-            products={products}
-            vendorOf={vendorOf}
-            dataLoaded={dataLoaded}
-            onOpenChat={(p) => setActiveProduct(p)}
-          />
-        )
-      ) : role === "vendor" ? (
-        <VendorArea vendors={vendors} products={products} vendorOf={vendorOf} onDataChanged={refreshData} />
-      ) : (
-        <OwnerArea vendorOf={vendorOf} />
-      )}
-
-      {activeProduct && buyerAuth && (
-        <ChatPanel
-          product={activeProduct}
-          vendor={vendorOf(activeProduct.vendorId)}
-          buyerAuth={buyerAuth}
-          onClose={() => setActiveProduct(null)}
-        />
-      )}
-
-      {showApiSettings && <ApiSettingsModal onClose={() => { setShowApiSettings(false); refreshData(); }} />}
-    </div>
-  );
+  if (S._showOrderForm) html += orderFormModal();
+  return html;
 }
 
-function ApiSettingsModal({ onClose }) {
-  const [value, setValue] = useState(getApiBase());
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-lg p-5" style={{ background: CARD_PAPER }}>
-        <h3 className="cm-display text-lg mb-2" style={{ color: "#2b2b2b" }}>Backend URL</h3>
-        <p className="cm-body text-xs mb-3" style={{ color: "#7a7a7a" }}>
-          Point this at wherever your backend is running — <code>http://localhost:3001</code> while testing locally, or your deployed URL once it's live.
-        </p>
-        <input value={value} onChange={(e) => setValue(e.target.value)}
-          className="cm-body w-full text-sm rounded-md px-3 py-2 border mb-3" style={{ borderColor: "#d8cfb4" }} />
-        <button onClick={() => { setApiBase(value); onClose(); }}
-          className="cm-body w-full text-sm font-semibold rounded-md py-2.5" style={{ background: "#20301f", color: CHALK_YELLOW }}>
-          Save & reload data
-        </button>
-      </div>
-    </div>
-  );
-}
+function orderFormModal() {
+  var p = S.activeProduct, v = vendorOf(p.vendorId);
+  var qty = S._orderQty || 1, priceVal = S._orderPrice != null ? S._orderPrice : p.price, pm = S._orderPayment || "transfer";
+  var total = (Number(priceVal) || 0) * qty + DELIVERY_FEE;
+  var html = '<div class="modal-backdrop" onclick="if(event.target===this)S._showOrderForm=false,render();"><div class="modal-card">';
+  html += '<div class="row-between"><h3 style="margin:0;">Delivery details</h3><button class="close-x" onclick="S._showOrderForm=false;render();">\u2715</button></div>';
+  html += '<p style="font-size:12px;color:#7a7a7a;">' + (p.icon || "\uD83D\uDED2") + ' ' + esc(p.name) + ' &mdash; from ' + esc(v.name) + '</p>';
 
-/* ------------------------------- Top bar ------------------------------- */
-function TopBar({ role, setRole, buyerAuth, onOpenApiSettings }) {
-  return (
-    <div className="w-full border-b" style={{ borderColor: "rgba(243,240,231,0.15)", background: BOARD_BG_2 }}>
-      <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🏫</span>
-          <h1 className="cm-display text-2xl" style={{ color: CHALK_YELLOW }}>Campus Market</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex rounded-full p-1" style={{ background: "rgba(243,240,231,0.08)" }}>
-            <button onClick={() => setRole("buyer")} className="cm-body text-sm px-3 py-1.5 rounded-full transition"
-              style={{ background: role === "buyer" ? CHALK_YELLOW : "transparent", color: role === "buyer" ? "#20301f" : CHALK, fontWeight: role === "buyer" ? 600 : 400 }}>
-              {buyerAuth ? `Hi, ${buyerAuth.displayName.split(" ")[0]}` : "I'm shopping"}
-            </button>
-            <button onClick={() => setRole("vendor")} className="cm-body text-sm px-3 py-1.5 rounded-full transition"
-              style={{ background: role === "vendor" ? CHALK_YELLOW : "transparent", color: role === "vendor" ? "#20301f" : CHALK, fontWeight: role === "vendor" ? 600 : 400 }}>
-              🏬 I sell here
-            </button>
-          </div>
-          <button onClick={() => setRole("owner")} title="Management" className="p-2 rounded-full"
-            style={{ background: role === "owner" ? CHALK_YELLOW : "rgba(243,240,231,0.08)", color: role === "owner" ? "#20301f" : "rgba(243,240,231,0.6)" }}>
-            ⚙
-          </button>
-          <button onClick={onOpenApiSettings} title="Backend URL" className="p-2 rounded-full text-xs" style={{ background: "rgba(243,240,231,0.08)", color: "rgba(243,240,231,0.6)" }}>
-            🔗
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------ Buyer gate ------------------------------ */
-function BuyerGate({ onSignedIn }) {
-  const [mode, setMode] = useState("login");
-  const [stage, setStage] = useState("form");
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-  const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState(null);
-
-  function switchMode(next) { setMode(next); setStage("form"); setError(""); setPin(""); setConfirmPin(""); setCode(""); setPending(null); }
-
-  async function submitSignup() {
-    setError(""); setBusy(true);
-    try {
-      const data = await api("/api/buyers/signup", { method: "POST", body: { username, displayName, email, pin } });
-      onSignedIn(data);
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  async function submitLogin() {
-    setError(""); setBusy(true);
-    try {
-      const data = await api("/api/buyers/login", { method: "POST", body: { username, pin } });
-      setPending({ username, devCode: data.devCode, emailSent: data.emailSent });
-      setStage("verify");
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  async function submitCode() {
-    setError(""); setBusy(true);
-    try {
-      const data = await api("/api/buyers/verify", { method: "POST", body: { username: pending.username, code } });
-      onSignedIn(data);
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  if (stage === "verify" && pending) {
-    return (
-      <div className="max-w-sm mx-auto px-5 pt-14 pb-24 text-center">
-        <h2 className="cm-display text-2xl mb-1" style={{ color: CHALK }}>Check your email</h2>
-        <p className="cm-body text-sm mb-3" style={{ color: "rgba(243,240,231,0.7)" }}>
-          {pending.emailSent ? "We emailed you a 6-digit code." : "We'd normally email a code, but no mail provider is configured on the backend yet."}
-        </p>
-        {!pending.emailSent && (
-          <div className="cm-body text-xs rounded-md px-3 py-2 mb-4" style={{ background: "rgba(240,200,70,0.12)", color: CHALK_YELLOW, border: "1px dashed rgba(240,200,70,0.4)" }}>
-            Demo mode — here's the code the server generated: <strong>{pending.devCode}</strong>
-          </div>
-        )}
-        <input autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))} onKeyDown={(e) => e.key === "Enter" && submitCode()}
-          placeholder="6-digit code" inputMode="numeric" maxLength={6}
-          className="cm-body w-full text-sm rounded-md px-3 py-2 border mb-2 text-center tracking-widest"
-          style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-        {error && <p className="cm-body text-xs mb-2" style={{ color: CHALK_CORAL }}>{error}</p>}
-        <button disabled={busy} onClick={submitCode} className="cm-body w-full text-sm font-semibold rounded-md px-4 py-2.5 mb-2 disabled:opacity-40" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-          {busy ? "Checking..." : "Verify & log in"}
-        </button>
-        <button onClick={() => setStage("form")} className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.5)" }}>← back</button>
-      </div>
-    );
-  }
-
-  const submit = mode === "login" ? submitLogin : submitSignup;
-
-  return (
-    <div className="max-w-sm mx-auto px-5 pt-14 pb-24 text-center">
-      <h2 className="cm-display text-2xl mb-1" style={{ color: CHALK }}>{mode === "login" ? "Log in to shop" : "Create your account"}</h2>
-      <p className="cm-body text-sm mb-4" style={{ color: "rgba(243,240,231,0.7)" }}>
-        {mode === "login" ? "Use your username and PIN — we'll email a code to confirm it's you." : "Pick a unique username — you can change your display name anytime after."}
-      </p>
-      <div className="flex rounded-full p-1 mb-4 mx-auto" style={{ background: "rgba(243,240,231,0.08)", maxWidth: 260 }}>
-        <button onClick={() => switchMode("login")} className="cm-body flex-1 text-sm px-3 py-1.5 rounded-full"
-          style={{ background: mode === "login" ? CHALK_YELLOW : "transparent", color: mode === "login" ? "#20301f" : CHALK }}>Log in</button>
-        <button onClick={() => switchMode("signup")} className="cm-body flex-1 text-sm px-3 py-1.5 rounded-full"
-          style={{ background: mode === "signup" ? CHALK_YELLOW : "transparent", color: mode === "signup" ? "#20301f" : CHALK }}>Sign up</button>
-      </div>
-      <div className="space-y-2 text-left">
-        <div>
-          <label className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>Username</label>
-          <input autoFocus value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. tega_01"
-            className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-        </div>
-        {mode === "signup" && (
-          <div>
-            <label className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>Display name</label>
-            <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="e.g. Tega"
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-          </div>
-        )}
-        {mode === "signup" && (
-          <div>
-            <label className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-          </div>
-        )}
-        <div>
-          <label className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>PIN</label>
-          <input value={pin} onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))} onKeyDown={(e) => e.key === "Enter" && mode === "login" && submit()}
-            placeholder="4-digit PIN" inputMode="numeric" maxLength={6}
-            className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-        </div>
-        {mode === "signup" && (
-          <div>
-            <label className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>Confirm PIN</label>
-            <input value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ""))} onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Re-enter PIN" inputMode="numeric" maxLength={6}
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-          </div>
-        )}
-      </div>
-      {error && <p className="cm-body text-xs mt-3" style={{ color: CHALK_CORAL }}>{error}</p>}
-      <button disabled={busy} onClick={() => {
-        if (mode === "signup" && pin !== confirmPin) { setError("PINs don't match."); return; }
-        submit();
-      }} className="cm-body w-full text-sm font-semibold rounded-md px-4 py-2.5 mt-4 disabled:opacity-40" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-        {busy ? "Checking..." : mode === "login" ? "Send login code" : "Create account"}
-      </button>
-    </div>
-  );
-}
-
-/* ------------------------------ Buyer view ------------------------------ */
-function BuyerView({ buyerAuth, onSwitchBuyer, onUpdateDisplayName, query, setQuery, category, setCategory, filtered, related, products, vendorOf, dataLoaded, onOpenChat }) {
-  const cats = ["All", ...CATEGORIES];
-  const [recommended, setRecommended] = useState([]);
-  const [recLabel, setRecLabel] = useState("Popular on the board");
-  const [editingName, setEditingName] = useState(false);
-  const [nameDraft, setNameDraft] = useState(buyerAuth.displayName);
-  const [savingName, setSavingName] = useState(false);
-
-  async function saveDisplayName() {
-    if (!nameDraft.trim()) return;
-    setSavingName(true);
-    try {
-      await api("/api/buyers/me", { method: "PATCH", body: { displayName: nameDraft.trim() }, token: buyerAuth.token });
-      onUpdateDisplayName(nameDraft.trim());
-      setEditingName(false);
-    } catch (e) { alert(e.message); }
-    setSavingName(false);
-  }
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { orders } = await api("/api/orders/mine", { token: buyerAuth.token });
-        if (!orders || orders.length === 0) { setRecommended(products.slice(0, 6)); setRecLabel("Popular on the board"); return; }
-        const freq = {};
-        orders.forEach((o) => {
-          const p = products.find((pr) => pr.id === o.product_id);
-          if (p) freq[p.category] = (freq[p.category] || 0) + 1;
-        });
-        const topCats = Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([c]) => c);
-        const boughtIds = new Set(orders.map((o) => o.product_id));
-        const picks = products.filter((p) => topCats.includes(p.category)).sort((a, b) => (boughtIds.has(a.id) ? 1 : 0) - (boughtIds.has(b.id) ? 1 : 0)).slice(0, 6);
-        setRecommended(picks.length ? picks : products.slice(0, 6));
-        setRecLabel("Because you've ordered from these categories before");
-      } catch { setRecommended(products.slice(0, 6)); }
-    })();
-  }, [buyerAuth.username, products]);
-
-  return (
-    <div className="max-w-5xl mx-auto px-5 pb-24">
-      <div className="pt-10 pb-2 text-center cm-fade-up">
-        <p className="cm-hand text-2xl mb-1" style={{ color: CHALK_BLUE }}>psst — need something on campus?</p>
-        <h2 className="cm-display text-3xl md:text-4xl leading-tight" style={{ color: CHALK }}>
-          Search it. Chat the seller. <span style={{ color: CHALK_CORAL }}>Get it delivered.</span>
-        </h2>
-        {editingName ? (
-          <div className="flex items-center justify-center gap-1.5 mt-2 max-w-xs mx-auto">
-            <input autoFocus value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveDisplayName()}
-              className="cm-body text-xs rounded-md px-2 py-1 border flex-1" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-            <button disabled={savingName} onClick={saveDisplayName} className="cm-body text-xs font-semibold rounded-md px-2 py-1" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-              {savingName ? "..." : "Save"}
-            </button>
-            <button onClick={() => { setEditingName(false); setNameDraft(buyerAuth.displayName); }} style={{ color: "rgba(243,240,231,0.5)" }}>✕</button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <button onClick={onSwitchBuyer} className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.5)" }}>↩ not {buyerAuth.displayName}? switch</button>
-            <button onClick={() => setEditingName(true)} className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.5)" }}>✎ edit name</button>
-          </div>
-        )}
-      </div>
-
-      <div className="cm-fade-up rounded-xl p-3 flex items-center gap-2 cm-chalk-border mt-6" style={{ background: "rgba(243,240,231,0.06)" }}>
-        <span style={{ color: CHALK }}>🔍</span>
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search for snacks, textbooks, printing, repairs..."
-          className="cm-body flex-1 bg-transparent outline-none text-base py-1" style={{ color: CHALK }} />
-        {query && <button onClick={() => setQuery("")} style={{ color: CHALK }}>✕</button>}
-      </div>
-
-      <div className="flex gap-2 flex-wrap mt-4">
-        {cats.map((c) => (
-          <button key={c} onClick={() => setCategory(c)} className="cm-body text-sm px-3 py-1.5 rounded-full border transition"
-            style={{ borderColor: category === c ? CHALK_YELLOW : "rgba(243,240,231,0.25)", color: category === c ? "#20301f" : CHALK, background: category === c ? CHALK_YELLOW : "transparent", fontWeight: category === c ? 600 : 400 }}>
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {!query.trim() && recommended.length > 0 && (
-        <div className="mt-8">
-          <h3 className="cm-body text-sm font-semibold mb-3" style={{ color: CHALK_YELLOW }}>✨ {recLabel}</h3>
-          <ProductGrid products={recommended} vendorOf={vendorOf} onOpenChat={onOpenChat} />
-          <div className="my-8" style={{ borderBottom: "2px dashed rgba(243,240,231,0.2)" }} />
-        </div>
-      )}
-
-      {!dataLoaded ? (
-        <p className="cm-body text-sm text-center mt-10" style={{ color: "rgba(243,240,231,0.6)" }}>loading the board...</p>
-      ) : filtered.length === 0 ? (
-        <div className="mt-10 text-center cm-fade-up">
-          <p className="cm-hand text-2xl" style={{ color: CHALK }}>nothing pinned to the board matches "{query}" yet</p>
-          {related.length > 0 && (
-            <>
-              <p className="cm-body text-sm mt-1 mb-4" style={{ color: "rgba(243,240,231,0.7)" }}>you might mean one of these:</p>
-              <ProductGrid products={related} vendorOf={vendorOf} onOpenChat={onOpenChat} />
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="mt-8">
-          <h3 className="cm-body text-sm font-semibold mb-3" style={{ color: CHALK_YELLOW }}>All listings</h3>
-          <ProductGrid products={filtered} vendorOf={vendorOf} onOpenChat={onOpenChat} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ProductGrid({ products, vendorOf, onOpenChat }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-      {products.map((p, i) => {
-        const vendor = vendorOf(p.vendorId);
-        const rotate = (i % 3 === 0) ? "-1.5deg" : (i % 3 === 1) ? "1deg" : "-0.5deg";
-        return (
-          <div key={p.id} className="cm-card cm-fade-up relative rounded-sm p-4 pt-6" style={{ transform: `rotate(${rotate})`, animationDelay: `${i * 40}ms` }}>
-            <div className="cm-tape rounded-sm" />
-            {p.imageUrl ? (
-              <img src={`${getApiBase()}${p.imageUrl}`} alt={p.name} className="cm-thumb" onError={(e) => { e.target.style.display = "none"; }} />
-            ) : (
-              <div className="text-3xl mb-2">{p.icon || "🛍️"}</div>
-            )}
-            <h3 className="cm-body font-semibold text-[15px] leading-snug" style={{ color: "#2b2b2b" }}>{p.name}</h3>
-            <p className="cm-body text-xs mt-1 mb-3" style={{ color: "#5a5a5a" }}>{p.desc}</p>
-            <div className="flex items-center justify-between mb-3">
-              <span className="cm-mono text-sm font-bold" style={{ color: "#2b2b2b" }}>{money(p.price)}</span>
-              <span className="cm-body text-[11px] px-2 py-0.5 rounded-full" style={{ background: "#EFE9D8", color: "#5a5a5a" }}>{vendor.name}</span>
-            </div>
-            <button onClick={() => onOpenChat(p)} className="cm-body w-full text-sm font-semibold rounded-md py-2" style={{ background: "#20301f", color: CHALK_YELLOW }}>
-              💬 Chat with seller
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ------------------------------ Chat panel ------------------------------ */
-function ChatPanel({ product, vendor, buyerAuth, onClose }) {
-  const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [showOrderForm, setShowOrderForm] = useState(false);
-  const [orderSent, setOrderSent] = useState(false);
-  const bottomRef = useRef(null);
-
-  async function loadMessages() {
-    try {
-      const data = await api(`/api/messages/${product.id}/${buyerAuth.username}`);
-      setMessages(data.messages || []);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  }
-
-  useEffect(() => { loadMessages(); }, [product.id, buyerAuth.username]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  async function sendMessage() {
-    if (!draft.trim()) return;
-    const text = draft.trim();
-    setDraft("");
-    try {
-      await api("/api/messages", { method: "POST", body: { productId: product.id, text }, token: buyerAuth.token });
-      await loadMessages();
-    } catch (e) { alert(e.message); }
-  }
-
-  return (
-    <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose} />
-      <div className="cm-slide-in relative w-full sm:w-[420px] h-full flex flex-col cm-scrollbar" style={{ background: CARD_PAPER }}>
-        <div className="flex items-center gap-3 px-4 py-4 border-b" style={{ borderColor: "#e5ddc8" }}>
-          <button onClick={onClose} style={{ color: "#2b2b2b" }}>←</button>
-          {product.imageUrl ? <img src={`${getApiBase()}${product.imageUrl}`} className="w-9 h-9 rounded object-cover" /> : <div className="text-2xl">{product.icon || "🛍️"}</div>}
-          <div className="flex-1 min-w-0">
-            <p className="cm-body font-semibold text-sm truncate" style={{ color: "#2b2b2b" }}>{product.name}</p>
-            <p className="cm-body text-xs" style={{ color: "#7a7a7a" }}>{vendor.name} · {vendor.tag}</p>
-          </div>
-          <button onClick={onClose} style={{ color: "#2b2b2b" }}>✕</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto cm-scrollbar px-4 py-4 space-y-3">
-          <div className="cm-body text-xs text-center py-2 px-3 rounded-lg mx-auto max-w-[85%]" style={{ background: "#EFE9D8", color: "#7a7a7a" }}>
-            Chatting about <strong>{product.name}</strong> (listed at {money(product.price)}). Agree on a final price here, then send the order below.
-          </div>
-          {loading ? <p className="cm-body text-xs text-center" style={{ color: "#9a9a9a" }}>loading...</p>
-            : messages.length === 0 ? <p className="cm-hand text-lg text-center mt-6" style={{ color: "#9a9a9a" }}>say hi to get things moving 👋</p>
-            : messages.map((m, i) => (
-              <div key={i} className={`flex ${m.sender === "buyer" ? "justify-end" : "justify-start"}`}>
-                <div className="cm-body text-sm max-w-[78%] px-3 py-2 rounded-2xl"
-                  style={{ background: m.sender === "buyer" ? "#20301f" : "#EFE9D8", color: m.sender === "buyer" ? CHALK_YELLOW : "#2b2b2b" }}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-          <div ref={bottomRef} />
-        </div>
-
-        <div className="px-3 py-3 border-t flex items-center gap-2" style={{ borderColor: "#e5ddc8" }}>
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Type a message..." className="cm-body flex-1 text-sm rounded-full px-4 py-2 border" style={{ borderColor: "#d8cfb4" }} />
-          <button onClick={sendMessage} className="p-2.5 rounded-full" style={{ background: "#20301f", color: CHALK_YELLOW }}>➤</button>
-        </div>
-
-        <div className="px-4 pb-4">
-          {orderSent ? (
-            <div className="cm-body text-sm rounded-lg px-3 py-3" style={{ background: "#dff0d8", color: "#2b5a2b" }}>
-              ✓ Order sent — {vendor.name} and management have it. Delivery fee is ₦{DELIVERY_FEE}, payable by transfer or cash.
-            </div>
-          ) : (
-            <button onClick={() => setShowOrderForm(true)} className="cm-body w-full text-sm font-semibold rounded-md py-2.5" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-              📦 Ready to order — send delivery details
-            </button>
-          )}
-        </div>
-      </div>
-
-      {showOrderForm && (
-        <OrderForm product={product} vendor={vendor} buyerAuth={buyerAuth} onClose={() => setShowOrderForm(false)} onSent={() => { setShowOrderForm(false); setOrderSent(true); }} />
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------ Order form ------------------------------ */
-function OrderForm({ product, vendor, buyerAuth, onClose, onSent }) {
-  const [qty, setQty] = useState(1);
-  const [agreedPrice, setAgreedPrice] = useState(product.price);
-  const [location, setLocation] = useState("");
-  const [phone, setPhone] = useState("");
-  const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("transfer");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const grandTotal = (Number(agreedPrice) || 0) * qty + DELIVERY_FEE;
-
-  async function submit() {
-    if (!location.trim() || !phone.trim() || !agreedPrice || Number(agreedPrice) <= 0) { setError("Fill in location, phone, and a valid price."); return; }
-    setSubmitting(true);
-    try {
-      await api("/api/orders", { method: "POST", token: buyerAuth.token, body: { productId: product.id, qty, agreedPrice: Number(agreedPrice), paymentMethod, location, phone, notes } });
-      onSent();
-    } catch (e) { setError(e.message); }
-    setSubmitting(false);
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose} />
-      <div className="cm-fade-up relative w-full max-w-sm rounded-lg p-5 max-h-[90vh] overflow-y-auto cm-scrollbar" style={{ background: CARD_PAPER }}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="cm-display text-lg" style={{ color: "#2b2b2b" }}>Delivery details</h3>
-          <button onClick={onClose} style={{ color: "#7a7a7a" }}>✕</button>
-        </div>
-        <p className="cm-body text-xs mb-4" style={{ color: "#7a7a7a" }}>{product.icon || "🛍️"} {product.name} — from {vendor.name}</p>
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Quantity</label>
-              <input type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, +e.target.value))}
-                className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-            </div>
-            <div className="flex-1">
-              <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Price agreed (₦/item)</label>
-              <input type="number" min={1} value={agreedPrice} onChange={(e) => setAgreedPrice(e.target.value)}
-                className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-            </div>
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Delivery location</label>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Hostel B, Room 214"
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Phone number</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 080..."
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Payment method</label>
-            <div className="flex gap-2 mt-1">
-              {["transfer", "cash"].map((m) => (
-                <button key={m} type="button" onClick={() => setPaymentMethod(m)} className="cm-body flex-1 text-sm rounded-md py-2 border capitalize"
-                  style={{ borderColor: paymentMethod === m ? "#20301f" : "#d8cfb4", background: paymentMethod === m ? "#20301f" : "transparent", color: paymentMethod === m ? CHALK_YELLOW : "#5a5a5a" }}>
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Notes (optional)</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-              className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1 resize-none" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-        </div>
-        <div className="cm-body text-xs rounded-md px-3 py-2 mt-3 space-y-0.5" style={{ background: "#EFE9D8", color: "#5a5a5a" }}>
-          <div className="flex justify-between"><span>{qty} × {money(agreedPrice)}</span><span>{money((Number(agreedPrice) || 0) * qty)}</span></div>
-          <div className="flex justify-between"><span>Delivery fee</span><span>{money(DELIVERY_FEE)}</span></div>
-          <div className="flex justify-between font-bold pt-1 border-t mt-1" style={{ borderColor: "#d8cfb4", color: "#2b2b2b" }}>
-            <span>Total ({paymentMethod})</span><span>{money(grandTotal)}</span>
-          </div>
-        </div>
-        {error && <p className="cm-body text-xs mt-2" style={{ color: CHALK_CORAL }}>{error}</p>}
-        <button disabled={submitting} onClick={submit} className="cm-body w-full mt-4 text-sm font-semibold rounded-md py-2.5 disabled:opacity-40" style={{ background: "#20301f", color: CHALK_YELLOW }}>
-          {submitting ? "Sending..." : "Send order"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------- Vendor area ---------------------------- */
-function VendorArea({ vendors, products, vendorOf, onDataChanged }) {
-  const [stage, setStage] = useState("pick");
-  const [selected, setSelected] = useState(null); // { id, name, tag }
-  const [isNew, setIsNew] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newTag, setNewTag] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [vendorAuth, setVendorAuth] = useState(() => {
-    const token = localStorage.getItem("cm_vendor_token");
-    const id = localStorage.getItem("cm_vendor_id");
-    const name = localStorage.getItem("cm_vendor_name");
-    const tag = localStorage.getItem("cm_vendor_tag");
-    return token && id ? { token, id, name, tag } : null;
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<div class="field" style="flex:1;"><label>Quantity</label><input id="ord-qty" type="number" min="1" value="' + qty + '" oninput="S._orderQty=Math.max(1,+this.value);renderKeepValues();" /></div>';
+  html += '<div class="field" style="flex:1;"><label>Price agreed (\u20A6/item)</label><input id="ord-price" type="number" min="1" value="' + esc(priceVal) + '" oninput="S._orderPrice=this.value;renderKeepValues();" /></div>';
+  html += '</div>';
+  html += '<div class="field"><label>Delivery location</label><input id="ord-location" placeholder="e.g. Hostel B, Room 214" value="' + esc(S._orderLocation || "") + '" oninput="S._orderLocation=this.value" /></div>';
+  html += '<div class="field"><label>Phone number</label><input id="ord-phone" placeholder="e.g. 080..." value="' + esc(S._orderPhone || "") + '" oninput="S._orderPhone=this.value" /></div>';
+  html += '<div class="field"><label>Payment method</label><div style="display:flex;gap:8px;">';
+  ["transfer", "cash"].forEach(function (m) {
+    var active = pm === m;
+    html += '<button type="button" onclick="S._orderPayment=\'' + m + '\';render();" style="flex:1;padding:8px;border-radius:6px;border:1px solid ' + (active ? "#20301f" : "#d8cfb4") + ';background:' + (active ? "#20301f" : "transparent") + ';color:' + (active ? "#F0C846" : "#5a5a5a") + ';text-transform:capitalize;cursor:pointer;">' + m + '</button>';
   });
-  const [dashboardConvo, setDashboardConvo] = useState(null);
+  html += '</div></div>';
+  html += '<div class="field"><label>Notes (optional)</label><textarea id="ord-notes" rows="2" oninput="S._orderNotes=this.value">' + esc(S._orderNotes || "") + '</textarea></div>';
 
-  function persistVendorAuth(v) {
-    localStorage.setItem("cm_vendor_token", v.token);
-    localStorage.setItem("cm_vendor_id", v.id);
-    localStorage.setItem("cm_vendor_name", v.name);
-    localStorage.setItem("cm_vendor_tag", v.tag || "");
-    setVendorAuth(v);
+  html += '<div style="background:#EFE9D8;border-radius:6px;padding:10px;font-size:13px;color:#5a5a5a;">';
+  html += '<div class="row-between" style="margin:0;"><span>' + qty + ' &times; ' + money(priceVal) + '</span><span>' + money((Number(priceVal) || 0) * qty) + '</span></div>';
+  html += '<div class="row-between" style="margin:4px 0;"><span>Delivery fee</span><span>' + money(DELIVERY_FEE) + '</span></div>';
+  html += '<div class="row-between" style="margin:0;font-weight:800;color:#2b2b2b;border-top:1px solid #d8cfb4;padding-top:6px;"><span>Total (' + pm + ')</span><span>' + money(total) + '</span></div>';
+  html += '</div>';
+
+  if (S._orderError) html += '<p class="msg-error">' + esc(S._orderError) + '</p>';
+  html += '<div style="margin-top:12px;"><button class="btn btn-primary" onclick="submitOrder()">Send order</button></div>';
+  html += '</div></div>';
+  return html;
+}
+function renderKeepValues() {
+  // qty/price use oninput handlers updating state directly; re-render not required for those two,
+  // but totals need refresh - do a light targeted update instead of full render to avoid losing focus.
+  var p = S.activeProduct;
+  var qty = S._orderQty || 1, priceVal = S._orderPrice != null ? S._orderPrice : p.price;
+  var total = (Number(priceVal) || 0) * qty + DELIVERY_FEE;
+  var totalsEl = document.querySelector(".modal-card > div[style*='background:#EFE9D8']");
+  if (totalsEl) {
+    totalsEl.innerHTML =
+      '<div class="row-between" style="margin:0;"><span>' + qty + ' &times; ' + money(priceVal) + '</span><span>' + money((Number(priceVal) || 0) * qty) + '</span></div>' +
+      '<div class="row-between" style="margin:4px 0;"><span>Delivery fee</span><span>' + money(DELIVERY_FEE) + '</span></div>' +
+      '<div class="row-between" style="margin:0;font-weight:800;color:#2b2b2b;border-top:1px solid #d8cfb4;padding-top:6px;"><span>Total (' + (S._orderPayment || "transfer") + ')</span><span>' + money(total) + '</span></div>';
   }
-  function switchShop() {
-    localStorage.removeItem("cm_vendor_token"); localStorage.removeItem("cm_vendor_id");
-    localStorage.removeItem("cm_vendor_name"); localStorage.removeItem("cm_vendor_tag");
-    setVendorAuth(null); setStage("pick"); setSelected(null); setPassword(""); setError("");
-  }
-
-  async function registerNewVendor() {
-    if (!newName.trim()) { setError("Give your shop a name."); return; }
-    if (password.trim().length < 4) { setError("Password needs to be at least 4 characters."); return; }
-    setBusy(true); setError("");
-    try {
-      const data = await api("/api/vendors/register", { method: "POST", body: { name: newName, tag: newTag, password } });
-      persistVendorAuth({ token: data.token, id: data.id, name: data.name, tag: data.tag });
-      await onDataChanged();
-      setStage("dashboard");
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  async function loginExisting(v) {
-    setBusy(true); setError("");
-    try {
-      const data = await api("/api/vendors/login", { method: "POST", body: { id: v.id, password } });
-      persistVendorAuth({ token: data.token, id: data.id, name: data.name, tag: data.tag });
-      setStage("dashboard");
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
-
-  if (vendorAuth && stage !== "dashboard") setStage("dashboard");
-
-  if (stage === "pick") {
-    return (
-      <div className="max-w-3xl mx-auto px-5 pt-10 pb-24">
-        <div className="cm-fade-up mb-6 text-center">
-          <p className="cm-hand text-2xl mb-1" style={{ color: CHALK_BLUE }}>seller check-in</p>
-          <h2 className="cm-display text-3xl" style={{ color: CHALK }}>Who's setting up shop?</h2>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-3 mb-6">
-          {vendors.map((v) => (
-            <button key={v.id} onClick={() => { setSelected(v); setIsNew(false); setPassword(""); setError(""); setStage("auth"); }} className="cm-card text-left rounded-md p-4">
-              <p className="cm-body font-semibold text-sm" style={{ color: "#2b2b2b" }}>{v.name}</p>
-              <p className="cm-body text-xs mt-0.5" style={{ color: "#7a7a7a" }}>{v.tag}</p>
-            </button>
-          ))}
-        </div>
-        <div className="cm-card rounded-md p-4">
-          <p className="cm-body text-sm font-semibold mb-2" style={{ color: "#2b2b2b" }}>+ Register a new shop</p>
-          <div className="space-y-2">
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Shop name" className="cm-body w-full text-sm rounded-md px-3 py-2 border" style={{ borderColor: "#d8cfb4" }} />
-            <input value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Where to find you" className="cm-body w-full text-sm rounded-md px-3 py-2 border" style={{ borderColor: "#d8cfb4" }} />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Set a shop password" className="cm-body w-full text-sm rounded-md px-3 py-2 border" style={{ borderColor: "#d8cfb4" }} />
-            {error && <p className="cm-body text-xs" style={{ color: CHALK_CORAL }}>{error}</p>}
-            <button disabled={busy} onClick={registerNewVendor} className="cm-body text-sm font-semibold rounded-md px-4 py-2" style={{ background: "#20301f", color: CHALK_YELLOW }}>
-              {busy ? "..." : "Continue"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (stage === "auth" && selected) {
-    return (
-      <div className="max-w-sm mx-auto px-5 pt-16 pb-24 text-center">
-        <h2 className="cm-display text-2xl mb-1" style={{ color: CHALK }}>{selected.name}</h2>
-        <p className="cm-body text-sm mb-4" style={{ color: "rgba(243,240,231,0.7)" }}>Enter your shop's password to continue.</p>
-        <input type="password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && loginExisting(selected)}
-          placeholder="Password" className="cm-body w-full text-sm rounded-md px-3 py-2 border mb-2" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-        {error && <p className="cm-body text-xs mb-2" style={{ color: CHALK_CORAL }}>{error}</p>}
-        <div className="flex gap-2">
-          <button onClick={() => setStage("pick")} className="cm-body flex-1 text-sm rounded-md px-4 py-2" style={{ background: "rgba(243,240,231,0.1)", color: CHALK }}>Back</button>
-          <button disabled={busy} onClick={() => loginExisting(selected)} className="cm-body flex-1 text-sm font-semibold rounded-md px-4 py-2 disabled:opacity-40" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-            {busy ? "..." : "Unlock"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <VendorDashboard vendorAuth={vendorAuth} products={products.filter((p) => p.vendorId === vendorAuth.id)}
-      onDataChanged={onDataChanged} dashboardConvo={dashboardConvo} setDashboardConvo={setDashboardConvo} onSwitchShop={switchShop} />
-  );
+}
+async function submitOrder() {
+  var p = S.activeProduct;
+  var body = {
+    productId: p.id,
+    qty: S._orderQty || 1,
+    agreedPrice: Number(S._orderPrice != null ? S._orderPrice : p.price),
+    paymentMethod: S._orderPayment || "transfer",
+    location: val("ord-location"),
+    phone: val("ord-phone"),
+    notes: val("ord-notes"),
+  };
+  if (!body.location.trim() || !body.phone.trim() || !body.agreedPrice) { S._orderError = "Fill in location, phone, and a valid price."; render(); return; }
+  try {
+    await api("/api/orders", { method: "POST", token: S.buyerAuth.token, body: body });
+    S._showOrderForm = false; S._orderSent = true; S._orderError = "";
+    render();
+  } catch (e) { S._orderError = e.message; render(); }
 }
 
-function VendorDashboard({ vendorAuth, products, onDataChanged, dashboardConvo, setDashboardConvo, onSwitchShop }) {
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
-  const [showAddItem, setShowAddItem] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try { const data = await api("/api/orders/vendor", { token: vendorAuth.token }); setOrders(data.orders || []); }
-      catch (e) { console.error(e); }
-      setLoadingOrders(false);
-    })();
-  }, [vendorAuth.id]);
-
-  return (
-    <div className="max-w-5xl mx-auto px-5 pb-24 pt-10">
-      <div className="cm-fade-up mb-8 flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <p className="cm-hand text-2xl mb-1" style={{ color: CHALK_BLUE }}>seller view</p>
-          <h2 className="cm-display text-3xl" style={{ color: CHALK }}>{vendorAuth.name}'s counter</h2>
-          <p className="cm-body text-sm mt-1" style={{ color: "rgba(243,240,231,0.7)" }}>{vendorAuth.tag}</p>
-        </div>
-        <button onClick={onSwitchShop} className="cm-body text-xs rounded-full px-3 py-1.5" style={{ background: "rgba(243,240,231,0.1)", color: CHALK }}>Switch shop</button>
-      </div>
-
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="cm-body text-sm font-semibold" style={{ color: CHALK_YELLOW }}>📦 Your listings</h3>
-          <button onClick={() => setShowAddItem(true)} className="cm-body text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: CHALK_YELLOW, color: "#20301f" }}>+ List an item</button>
-        </div>
-        {products.length === 0 ? (
-          <p className="cm-hand text-lg" style={{ color: "rgba(243,240,231,0.6)" }}>nothing listed yet — add your first item</p>
-        ) : (
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {products.map((p) => (
-              <div key={p.id} className="cm-card rounded-md p-3">
-                {p.imageUrl && <img src={`${getApiBase()}${p.imageUrl}`} className="cm-thumb" style={{ height: 70 }} />}
-                <div className="flex items-center gap-2 mb-1"><span className="text-xl">{p.icon || "🛍️"}</span><span className="cm-body text-sm font-semibold" style={{ color: "#2b2b2b" }}>{p.name}</span></div>
-                <p className="cm-mono text-xs font-bold mb-2" style={{ color: "#2b2b2b" }}>{money(p.price)}</p>
-                <button onClick={() => setDashboardConvo(p)} className="cm-body w-full text-xs rounded-md py-1.5" style={{ background: "#EFE9D8", color: "#2b2b2b" }}>💬 View chats</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h3 className="cm-body text-sm font-semibold mb-3" style={{ color: CHALK_YELLOW }}>📋 Orders sent to you</h3>
-        {loadingOrders ? <p className="cm-body text-xs" style={{ color: "rgba(243,240,231,0.6)" }}>loading...</p>
-          : orders.length === 0 ? <p className="cm-hand text-lg" style={{ color: "rgba(243,240,231,0.6)" }}>no orders yet</p>
-          : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              {orders.slice().reverse().map((o) => (
-                <div key={o.id} className="cm-card rounded-md p-3">
-                  <p className="cm-body text-sm font-semibold" style={{ color: "#2b2b2b" }}>{o.qty}× {o.product_name} @ {money(o.agreed_price)}</p>
-                  <p className="cm-body text-xs mt-1" style={{ color: "#5a5a5a" }}>📍 {o.location}</p>
-                  <p className="cm-body text-xs" style={{ color: "#5a5a5a" }}>📞 {o.phone} · from {o.buyer_display_name}</p>
-                  <p className="cm-body text-xs mt-1" style={{ color: "#7a7a7a" }}>{o.payment_method === "cash" ? "Pays cash on delivery" : "Pays by transfer"}</p>
-                  {o.notes && <p className="cm-body text-xs mt-1 italic" style={{ color: "#7a7a7a" }}>"{o.notes}"</p>}
-                </div>
-              ))}
-            </div>
-          )}
-      </div>
-
-      {dashboardConvo && <VendorConvoView product={dashboardConvo} vendorAuth={vendorAuth} onClose={() => setDashboardConvo(null)} />}
-      {showAddItem && <AddItemForm vendorAuth={vendorAuth} onClose={() => setShowAddItem(false)} onAdded={async () => { setShowAddItem(false); await onDataChanged(); }} />}
-    </div>
-  );
+/* ================= VENDOR ================= */
+function vendorArea() {
+  if (S.vendorAuth && S.vendorStage !== "dashboard") S.vendorStage = "dashboard";
+  if (S.vendorStage === "pick") return vendorPick();
+  if (S.vendorStage === "auth") return vendorAuthScreen();
+  return vendorDashboard();
 }
 
-function AddItemForm({ vendorAuth, onClose, onAdded }) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0]);
-  const [price, setPrice] = useState("");
-  const [icon, setIcon] = useState("🛍️");
-  const [imageFile, setImageFile] = useState(null);
-  const [desc, setDesc] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+function vendorPick() {
+  var html = '<div class="wrap"><div class="hero"><div class="sub">seller check-in</div><h2>Who&#39;s setting up shop?</h2></div>';
+  html += '<div class="grid">';
+  S.vendors.forEach(function (v) {
+    html += '<button class="card" style="text-align:left;cursor:pointer;" onclick="pickVendor(\'' + esc(v.id) + '\')"><div style="font-weight:700;font-size:14px;color:#2b2b2b;">' + esc(v.name) + '</div><div style="font-size:12px;color:#7a7a7a;">' + esc(v.tag) + '</div></button>';
+  });
+  html += '</div>';
+  html += '<div class="card" style="margin-top:16px;"><div style="font-weight:700;font-size:14px;color:#2b2b2b;margin-bottom:8px;">+ Register a new shop</div>';
+  html += '<div class="field"><input id="nv-name" placeholder="Shop name" /></div>';
+  html += '<div class="field"><input id="nv-tag" placeholder="Where to find you" /></div>';
+  html += '<div class="field"><input id="nv-pass" type="password" placeholder="Set a shop password" /></div>';
+  if (S._vendorError) html += '<p class="msg-error">' + esc(S._vendorError) + '</p>';
+  html += '<button class="btn btn-primary btn-small" onclick="registerVendor()">Continue</button></div></div>';
+  return html;
+}
+function pickVendor(id) { S.vendorSelected = vendorOf(id); S.vendorIsNew = false; S._vendorError = ""; S.vendorStage = "auth"; render(); }
+async function registerVendor() {
+  var body = { name: val("nv-name"), tag: val("nv-tag"), password: val("nv-pass") };
+  try {
+    var data = await api("/api/vendors/register", { method: "POST", body: body });
+    saveVendorAuth({ token: data.token, id: data.id, name: data.name, tag: data.tag });
+    await refreshData();
+    S.vendorStage = "dashboard"; render();
+  } catch (e) { S._vendorError = e.message; render(); }
+}
+function vendorAuthScreen() {
+  var v = S.vendorSelected;
+  var html = '<div class="wrap"><div style="max-width:340px;margin:0 auto;padding-top:40px;" class="center">';
+  html += '<h2>' + esc(v.name) + '</h2><p class="msg-info">Enter your shop&#39;s password to continue.</p>';
+  html += '<div class="field"><input id="va-pass" type="password" class="dark-input" placeholder="Password" onkeydown="if(event.key===\'Enter\')loginVendor()" /></div>';
+  if (S._vendorError) html += '<p class="msg-error">' + esc(S._vendorError) + '</p>';
+  html += '<div style="display:flex;gap:8px;"><button class="btn btn-ghost" onclick="S.vendorStage=\'pick\';render();">Back</button><button class="btn btn-accent" onclick="loginVendor()">Unlock</button></div>';
+  html += '</div></div>';
+  return html;
+}
+async function loginVendor() {
+  try {
+    var data = await api("/api/vendors/login", { method: "POST", body: { id: S.vendorSelected.id, password: val("va-pass") } });
+    saveVendorAuth({ token: data.token, id: data.id, name: data.name, tag: data.tag });
+    S.vendorStage = "dashboard"; render();
+  } catch (e) { S._vendorError = e.message; render(); }
+}
+function switchShop() { clearVendorAuth(); S.vendorStage = "pick"; render(); }
 
-  async function submit() {
-    if (!name.trim() || !price || Number(price) <= 0) { setError("Give the item a name and a price above 0."); return; }
-    setSubmitting(true); setError("");
-    try {
-      let imageBase64;
-      if (imageFile) imageBase64 = await fileToDataUrl(imageFile);
-      await api("/api/products", { method: "POST", token: vendorAuth.token, body: { name, category, price: Number(price), icon, desc, imageBase64 } });
-      onAdded();
-    } catch (e) { setError(e.message); }
-    setSubmitting(false);
+function vendorDashboard() {
+  var myProducts = S.products.filter(function (p) { return p.vendorId === S.vendorAuth.id; });
+  var html = '<div class="wrap">';
+  html += '<div class="row-between" style="align-items:flex-start;padding-top:20px;">';
+  html += '<div><div class="sub" style="color:#8FC1D4;">seller view</div><h2 style="margin:2px 0;">' + esc(S.vendorAuth.name) + '&#39;s counter</h2><div style="color:rgba(243,240,231,0.7);font-size:14px;">' + esc(S.vendorAuth.tag) + '</div></div>';
+  html += '<button class="btn btn-ghost btn-small" onclick="switchShop()">Switch shop</button></div>';
+
+  html += '<div class="row-between"><div class="section-title" style="margin:20px 0 0;">\uD83D\uDCE6 Your listings</div><button class="btn btn-accent btn-small" onclick="S._showAddItem=true;render();">+ List an item</button></div>';
+  if (myProducts.length === 0) { html += '<p class="msg-info">nothing listed yet</p>'; }
+  else {
+    html += '<div class="grid">';
+    myProducts.forEach(function (p) {
+      html += '<div class="card">';
+      if (p.imageUrl) html += '<img src="' + esc(getApiBase() + p.imageUrl) + '" style="width:100%;height:70px;object-fit:cover;border-radius:4px;margin-bottom:6px;" />';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="font-size:20px;">' + (p.icon || "\uD83D\uDED2") + '</span><span style="font-weight:700;font-size:14px;color:#2b2b2b;">' + esc(p.name) + '</span></div>';
+      html += '<div class="price" style="font-size:12px;margin-bottom:8px;">' + money(p.price) + '</div>';
+      html += '<button class="btn btn-ghost btn-small" style="width:100%;background:#EFE9D8;color:#2b2b2b;" onclick="openVendorConvo(\'' + esc(p.id) + '\')">\uD83D\uDCAC View chats</button>';
+      html += '</div>';
+    });
+    html += '</div>';
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose} />
-      <div className="cm-fade-up relative w-full max-w-sm rounded-lg p-5 max-h-[90vh] overflow-y-auto cm-scrollbar" style={{ background: CARD_PAPER }}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="cm-display text-lg" style={{ color: "#2b2b2b" }}>List an item</h3>
-          <button onClick={onClose} style={{ color: "#7a7a7a" }}>✕</button>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Item name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Jollof rice (large)" className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }}>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="w-20">
-              <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Emoji</label>
-              <input value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4} className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1 text-center" style={{ borderColor: "#d8cfb4" }} />
-            </div>
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Photo (optional)</label>
-            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} className="cm-body w-full text-xs mt-1" />
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Price (₦)</label>
-            <input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="e.g. 1500" className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-          <div>
-            <label className="cm-body text-xs font-medium" style={{ color: "#5a5a5a" }}>Description</label>
-            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} className="cm-body w-full text-sm rounded-md px-3 py-2 border mt-1 resize-none" style={{ borderColor: "#d8cfb4" }} />
-          </div>
-        </div>
-        {error && <p className="cm-body text-xs mt-2" style={{ color: CHALK_CORAL }}>{error}</p>}
-        <button disabled={submitting} onClick={submit} className="cm-body w-full mt-4 text-sm font-semibold rounded-md py-2.5 disabled:opacity-40" style={{ background: "#20301f", color: CHALK_YELLOW }}>
-          {submitting ? "Listing..." : "Add to the board"}
-        </button>
-      </div>
-    </div>
-  );
+  html += '<div class="section-title">\uD83D\uDCCB Orders sent to you</div>';
+  html += '<div id="vendor-orders-slot">loading...</div>';
+
+  html += '</div>';
+  if (S._showAddItem) html += addItemModal();
+  if (S._vendorConvoProduct) html += vendorConvoModal();
+  loadVendorOrders();
+  return html;
+}
+async function loadVendorOrders() {
+  try {
+    var data = await api("/api/orders/vendor", { token: S.vendorAuth.token });
+    var slot = $("vendor-orders-slot");
+    if (!slot) return;
+    var orders = data.orders || [];
+    if (orders.length === 0) { slot.innerHTML = '<p class="msg-info">no orders yet</p>'; return; }
+    var html = '';
+    orders.slice().reverse().forEach(function (o) {
+      html += '<div class="order-item"><div style="font-weight:700;font-size:14px;color:#2b2b2b;">' + o.qty + '\u00d7 ' + esc(o.product_name) + ' @ ' + money(o.agreed_price) + '</div>';
+      html += '<div style="font-size:12px;color:#5a5a5a;">\uD83D\uDCCD ' + esc(o.location) + '</div>';
+      html += '<div style="font-size:12px;color:#5a5a5a;">\uD83D\uDCDE ' + esc(o.phone) + ' &middot; from ' + esc(o.buyer_display_name) + '</div>';
+      html += '<div style="font-size:12px;color:#7a7a7a;">' + (o.payment_method === "cash" ? "Pays cash on delivery" : "Pays by transfer") + '</div>';
+      if (o.notes) html += '<div style="font-size:12px;color:#7a7a7a;font-style:italic;">"' + esc(o.notes) + '"</div>';
+      html += '</div>';
+    });
+    slot.innerHTML = html;
+  } catch (e) { console.error(e); }
 }
 
-function VendorConvoView({ product, vendorAuth, onClose }) {
-  const [buyers, setBuyers] = useState([]);
-  const [selectedBuyer, setSelectedBuyer] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState("");
-
-  useEffect(() => {
-    (async () => {
-      try { const data = await api(`/api/messages/for-vendor/${product.id}`, { token: vendorAuth.token }); setBuyers(data.buyers || []); }
-      catch { setBuyers([]); }
-    })();
-  }, [product.id]);
-
-  async function loadConvo(buyerUsername) {
-    setSelectedBuyer(buyerUsername);
-    const data = await api(`/api/messages/${product.id}/${buyerUsername}`);
-    setMessages(data.messages || []);
-  }
-
-  async function reply() {
-    if (!draft.trim() || !selectedBuyer) return;
-    const text = draft.trim();
-    setDraft("");
-    await api("/api/messages", { method: "POST", token: vendorAuth.token, body: { productId: product.id, buyerUsername: selectedBuyer, text } });
-    await loadConvo(selectedBuyer);
-  }
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose} />
-      <div className="cm-fade-up relative w-full max-w-md rounded-lg p-5 max-h-[80vh] flex flex-col" style={{ background: CARD_PAPER }}>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="cm-body text-sm font-semibold" style={{ color: "#2b2b2b" }}>{product.icon || "🛍️"} {product.name} — chats</h3>
-          <button onClick={onClose} style={{ color: "#7a7a7a" }}>✕</button>
-        </div>
-        {!selectedBuyer ? (
-          buyers.length === 0 ? <p className="cm-body text-sm" style={{ color: "#7a7a7a" }}>No one has messaged about this item yet.</p>
-            : (
-              <div className="space-y-2 overflow-y-auto cm-scrollbar">
-                {buyers.map((b) => (
-                  <button key={b} onClick={() => loadConvo(b)} className="cm-body w-full text-left text-sm rounded-md px-3 py-2 border" style={{ borderColor: "#d8cfb4", color: "#2b2b2b" }}>{b}</button>
-                ))}
-              </div>
-            )
-        ) : (
-          <>
-            <button onClick={() => setSelectedBuyer(null)} className="cm-body text-xs mb-2" style={{ color: "#7a7a7a" }}>← back to buyers</button>
-            <div className="flex-1 overflow-y-auto cm-scrollbar space-y-2 mb-2">
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.sender === "vendor" ? "justify-end" : "justify-start"}`}>
-                  <div className="cm-body text-sm max-w-[78%] px-3 py-2 rounded-2xl" style={{ background: m.sender === "vendor" ? "#20301f" : "#EFE9D8", color: m.sender === "vendor" ? CHALK_YELLOW : "#2b2b2b" }}>{m.text}</div>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && reply()} placeholder="Reply..." className="cm-body flex-1 text-sm rounded-full px-3 py-2 border" style={{ borderColor: "#d8cfb4" }} />
-              <button onClick={reply} className="p-2 rounded-full" style={{ background: "#20301f", color: CHALK_YELLOW }}>➤</button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function addItemModal() {
+  var html = '<div class="modal-backdrop" onclick="if(event.target===this)S._showAddItem=false,render();"><div class="modal-card">';
+  html += '<div class="row-between"><h3 style="margin:0;">List an item</h3><button class="close-x" onclick="S._showAddItem=false;render();">\u2715</button></div>';
+  html += '<div class="field"><label>Item name</label><input id="ai-name" placeholder="e.g. Jollof rice (large)" /></div>';
+  html += '<div style="display:flex;gap:8px;"><div class="field" style="flex:1;"><label>Category</label><select id="ai-category">';
+  CATEGORIES.forEach(function (c) { html += '<option value="' + esc(c) + '">' + esc(c) + '</option>'; });
+  html += '</select></div><div class="field" style="width:70px;"><label>Emoji</label><input id="ai-icon" maxlength="4" value="\uD83D\uDED2" style="text-align:center;" /></div></div>';
+  html += '<div class="field"><label>Photo (optional)</label><input id="ai-image" type="file" accept="image/*" /></div>';
+  html += '<div class="field"><label>Price (\u20A6)</label><input id="ai-price" type="number" min="1" placeholder="e.g. 1500" /></div>';
+  html += '<div class="field"><label>Description</label><textarea id="ai-desc" rows="2"></textarea></div>';
+  if (S._addItemError) html += '<p class="msg-error">' + esc(S._addItemError) + '</p>';
+  html += '<button class="btn btn-primary" onclick="submitAddItem()">Add to the board</button>';
+  html += '</div></div>';
+  return html;
+}
+async function submitAddItem() {
+  var name = val("ai-name"), price = val("ai-price");
+  if (!name.trim() || !price || Number(price) <= 0) { S._addItemError = "Give the item a name and a price above 0."; render(); return; }
+  var body = { name: name, category: val("ai-category"), price: Number(price), icon: val("ai-icon"), desc: val("ai-desc") };
+  try {
+    var fileInput = $("ai-image");
+    if (fileInput && fileInput.files && fileInput.files[0]) body.imageBase64 = await fileToDataUrl(fileInput.files[0]);
+    await api("/api/products", { method: "POST", token: S.vendorAuth.token, body: body });
+    S._showAddItem = false; S._addItemError = "";
+    await refreshData();
+  } catch (e) { S._addItemError = e.message; render(); }
 }
 
-/* ---------------------------- Owner / Management ---------------------------- */
-function OwnerArea({ vendorOf }) {
-  const [ownerToken, setOwnerToken] = useState(() => localStorage.getItem("cm_owner_token"));
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+function openVendorConvo(productId) {
+  S._vendorConvoProduct = S.products.filter(function (p) { return p.id === productId; })[0];
+  S._vendorConvoBuyers = null;
+  S._vendorConvoSelected = null;
+  S._vendorConvoMessages = [];
+  render();
+  loadVendorConvoBuyers();
+}
+async function loadVendorConvoBuyers() {
+  try {
+    var data = await api("/api/messages/for-vendor/" + S._vendorConvoProduct.id, { token: S.vendorAuth.token });
+    S._vendorConvoBuyers = data.buyers || [];
+  } catch (e) { S._vendorConvoBuyers = []; }
+  render();
+}
+async function selectVendorConvo(buyerUsername) {
+  S._vendorConvoSelected = buyerUsername;
+  render();
+  var data = await api("/api/messages/" + S._vendorConvoProduct.id + "/" + buyerUsername);
+  S._vendorConvoMessages = data.messages || [];
+  render();
+}
+async function vendorConvoReply() {
+  var text = val("vc-draft").trim();
+  if (!text || !S._vendorConvoSelected) return;
+  $("vc-draft").value = "";
+  await api("/api/messages", { method: "POST", token: S.vendorAuth.token, body: { productId: S._vendorConvoProduct.id, buyerUsername: S._vendorConvoSelected, text: text } });
+  var data = await api("/api/messages/" + S._vendorConvoProduct.id + "/" + S._vendorConvoSelected);
+  S._vendorConvoMessages = data.messages || [];
+  render();
+}
+function closeVendorConvo() { S._vendorConvoProduct = null; render(); }
 
-  async function submit() {
-    setBusy(true); setError("");
-    try {
-      const data = await api("/api/owner/login", { method: "POST", body: { password } });
-      localStorage.setItem("cm_owner_token", data.token);
-      setOwnerToken(data.token);
-    } catch (e) { setError(e.message); }
-    setBusy(false);
-  }
+function vendorConvoModal() {
+  var p = S._vendorConvoProduct;
+  var html = '<div class="modal-backdrop" onclick="if(event.target===this)closeVendorConvo()"><div class="modal-card" style="max-height:80vh;display:flex;flex-direction:column;">';
+  html += '<div class="row-between"><h3 style="margin:0;font-size:15px;">' + (p.icon || "\uD83D\uDED2") + ' ' + esc(p.name) + ' &mdash; chats</h3><button class="close-x" onclick="closeVendorConvo()">\u2715</button></div>';
 
-  if (!ownerToken) {
-    return (
-      <div className="max-w-sm mx-auto px-5 pt-16 pb-24 text-center">
-        <h2 className="cm-display text-2xl mb-1" style={{ color: CHALK }}>Management</h2>
-        <p className="cm-body text-sm mb-4" style={{ color: "rgba(243,240,231,0.7)" }}>Enter the management password (first time sets it).</p>
-        <input type="password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Password" className="cm-body w-full text-sm rounded-md px-3 py-2 border mb-2" style={{ borderColor: "rgba(243,240,231,0.3)", background: "rgba(243,240,231,0.08)", color: CHALK }} />
-        {error && <p className="cm-body text-xs mb-2" style={{ color: CHALK_CORAL }}>{error}</p>}
-        <button disabled={busy} onClick={submit} className="cm-body w-full text-sm font-semibold rounded-md px-4 py-2.5 disabled:opacity-40" style={{ background: CHALK_YELLOW, color: "#20301f" }}>
-          {busy ? "..." : "Continue"}
-        </button>
-      </div>
-    );
+  if (!S._vendorConvoSelected) {
+    if (S._vendorConvoBuyers === null) html += '<p class="msg-info">loading...</p>';
+    else if (S._vendorConvoBuyers.length === 0) html += '<p style="font-size:14px;color:#7a7a7a;">No one has messaged about this item yet.</p>';
+    else {
+      S._vendorConvoBuyers.forEach(function (b) {
+        html += '<button class="card" style="text-align:left;margin-bottom:6px;cursor:pointer;padding:10px;" onclick="selectVendorConvo(\'' + esc(b) + '\')">' + esc(b) + '</button>';
+      });
+    }
+  } else {
+    html += '<button class="link-btn" style="text-align:left;margin-bottom:8px;" onclick="S._vendorConvoSelected=null;render();">&larr; back to buyers</button>';
+    html += '<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">';
+    S._vendorConvoMessages.forEach(function (m) {
+      html += '<div class="bubble ' + (m.sender === "vendor" ? "buyer" : "other") + '">' + esc(m.text) + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;"><input id="vc-draft" placeholder="Reply..." onkeydown="if(event.key===\'Enter\')vendorConvoReply()" style="flex:1;border-radius:999px;" /><button class="icon-btn" onclick="vendorConvoReply()">&#10148;</button></div>';
   }
-  return <OwnerDashboard ownerToken={ownerToken} vendorOf={vendorOf} onLogout={() => { localStorage.removeItem("cm_owner_token"); setOwnerToken(null); }} />;
+  html += '</div></div>';
+  return html;
 }
 
-function OwnerDashboard({ ownerToken, onLogout }) {
-  const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("today");
+/* ================= OWNER ================= */
+function ownerArea() {
+  if (!S.ownerToken) return ownerLogin();
+  return ownerDashboard();
+}
+function ownerLogin() {
+  var html = '<div class="wrap"><div style="max-width:340px;margin:0 auto;padding-top:40px;" class="center">';
+  html += '<h2>Management</h2><p class="msg-info">Enter the management password (first time sets it).</p>';
+  html += '<div class="field"><input id="ow-pass" type="password" class="dark-input" placeholder="Password" onkeydown="if(event.key===\'Enter\')ownerSubmit()" /></div>';
+  if (S._ownerError) html += '<p class="msg-error">' + esc(S._ownerError) + '</p>';
+  html += '<button class="btn btn-accent" onclick="ownerSubmit()">Continue</button></div></div>';
+  return html;
+}
+async function ownerSubmit() {
+  try {
+    var data = await api("/api/owner/login", { method: "POST", body: { password: val("ow-pass") } });
+    localStorage.setItem("cm_owner_token", data.token);
+    S.ownerToken = data.token; S._ownerError = "";
+    render();
+  } catch (e) { S._ownerError = e.message; render(); }
+}
+function ownerLogout() { localStorage.removeItem("cm_owner_token"); S.ownerToken = null; render(); }
 
-  async function refresh() {
-    setLoading(true);
-    try {
-      const data = await api("/api/owner/orders", { token: ownerToken });
-      setOrders(data.orders || []);
-      setStats(data.stats || null);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  }
-  useEffect(() => { refresh(); }, []);
+function ownerDashboard() {
+  var html = '<div class="wrap">';
+  html += '<div class="row-between" style="padding-top:20px;"><div><div class="sub" style="color:#8FC1D4;">management</div><h2 style="margin:2px 0;">Today at a glance</h2></div><button class="btn btn-ghost btn-small" onclick="ownerLogout()">Log out</button></div>';
+  html += '<div id="owner-stats-slot" class="grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px;"><p class="msg-info">loading...</p></div>';
+  html += '<div class="row-between"><div class="section-title" style="margin:10px 0;">\uD83D\uDCCB Orders</div>';
+  html += '<div class="tabs"><button class="tab-btn ' + ((S._ownerFilter || "today") === "today" ? "active" : "") + '" onclick="S._ownerFilter=\'today\';loadOwnerData();">Today</button><button class="tab-btn ' + (S._ownerFilter === "all" ? "active" : "") + '" onclick="S._ownerFilter=\'all\';loadOwnerData();">All time</button></div></div>';
+  html += '<div id="owner-orders-slot"><p class="msg-info">loading...</p></div>';
+  html += '</div>';
+  loadOwnerData();
+  return html;
+}
+async function loadOwnerData() {
+  try {
+    var data = await api("/api/owner/orders", { token: S.ownerToken });
+    var statsSlot = $("owner-stats-slot"), ordersSlot = $("owner-orders-slot");
+    if (!statsSlot) return;
+    var st = data.stats;
+    statsSlot.innerHTML =
+      statCard("Orders today", st.ordersToday) +
+      statCard("Delivered today", st.deliveredToday) +
+      statCard("Revenue (delivered)", money(st.revenueDeliveredToday)) +
+      statCard("Expected revenue today", money(st.expectedRevenueToday), st.pendingToday + " still pending");
 
-  async function markDelivered(id) {
-    await api(`/api/owner/orders/${id}/deliver`, { method: "PATCH", token: ownerToken });
-    refresh();
-  }
-
-  const isToday = (ts) => new Date(ts).toDateString() === new Date().toDateString();
-  const shown = filter === "today" ? orders.filter((o) => isToday(o.created_at)) : orders;
-
-  return (
-    <div className="max-w-5xl mx-auto px-5 pb-24 pt-10">
-      <div className="cm-fade-up mb-6 flex items-start justify-between">
-        <div>
-          <p className="cm-hand text-2xl mb-1" style={{ color: CHALK_BLUE }}>management</p>
-          <h2 className="cm-display text-3xl" style={{ color: CHALK }}>Today at a glance</h2>
-        </div>
-        <button onClick={onLogout} className="cm-body text-xs rounded-full px-3 py-1.5" style={{ background: "rgba(243,240,231,0.1)", color: CHALK }}>Log out</button>
-      </div>
-
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          <StatCard label="Orders today" value={stats.ordersToday} />
-          <StatCard label="Delivered today" value={stats.deliveredToday} />
-          <StatCard label="Revenue (delivered)" value={money(stats.revenueDeliveredToday)} />
-          <StatCard label="Expected revenue today" value={money(stats.expectedRevenueToday)} sub={`${stats.pendingToday} still pending`} />
-        </div>
-      )}
-
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="cm-body text-sm font-semibold" style={{ color: CHALK_YELLOW }}>📋 Orders</h3>
-        <div className="flex rounded-full p-1" style={{ background: "rgba(243,240,231,0.08)" }}>
-          <button onClick={() => setFilter("today")} className="cm-body text-xs px-3 py-1 rounded-full" style={{ background: filter === "today" ? CHALK_YELLOW : "transparent", color: filter === "today" ? "#20301f" : CHALK }}>Today</button>
-          <button onClick={() => setFilter("all")} className="cm-body text-xs px-3 py-1 rounded-full" style={{ background: filter === "all" ? CHALK_YELLOW : "transparent", color: filter === "all" ? "#20301f" : CHALK }}>All time</button>
-        </div>
-      </div>
-
-      {loading ? <p className="cm-body text-sm" style={{ color: "rgba(243,240,231,0.6)" }}>loading...</p>
-        : shown.length === 0 ? <p className="cm-hand text-lg" style={{ color: "rgba(243,240,231,0.6)" }}>no orders here yet</p>
-        : (
-          <div className="space-y-3">
-            {shown.slice().reverse().map((o) => (
-              <div key={o.id} className="cm-card rounded-md p-4 flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <p className="cm-body text-sm font-semibold" style={{ color: "#2b2b2b" }}>{o.qty}× {o.product_name} — {o.vendorName}</p>
-                  <p className="cm-body text-xs mt-1" style={{ color: "#5a5a5a" }}>📍 {o.location} · 📞 {o.phone}</p>
-                  <p className="cm-body text-xs mt-1" style={{ color: "#7a7a7a" }}>from {o.buyer_display_name} · {new Date(o.created_at).toLocaleString()} · pays {o.payment_method}</p>
-                  {o.notes && <p className="cm-body text-xs mt-1 italic" style={{ color: "#7a7a7a" }}>"{o.notes}"</p>}
-                </div>
-                <div className="text-right">
-                  <p className="cm-mono text-sm font-bold" style={{ color: "#2b2b2b" }}>{money(o.total)}</p>
-                  <p className="cm-body text-[11px] mb-2" style={{ color: "#9a9a9a" }}>incl. {money(o.delivery_fee)} delivery</p>
-                  {o.status === "delivered"
-                    ? <span className="cm-body text-xs px-2 py-1 rounded-full" style={{ background: "#dff0d8", color: "#2b5a2b" }}>✓ Delivered</span>
-                    : <button onClick={() => markDelivered(o.id)} className="cm-body text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: "#20301f", color: CHALK_YELLOW }}>Mark delivered</button>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-    </div>
-  );
+    var filter = S._ownerFilter || "today";
+    var isToday = function (ts) { return new Date(ts).toDateString() === new Date().toDateString(); };
+    var orders = data.orders || [];
+    var shown = filter === "today" ? orders.filter(function (o) { return isToday(o.created_at); }) : orders;
+    if (!ordersSlot) return;
+    if (shown.length === 0) { ordersSlot.innerHTML = '<p class="msg-info">no orders here yet</p>'; return; }
+    var html = "";
+    shown.slice().reverse().forEach(function (o) {
+      html += '<div class="order-item">';
+      html += '<div style="font-weight:700;font-size:14px;color:#2b2b2b;">' + o.qty + '\u00d7 ' + esc(o.product_name) + ' &mdash; ' + esc(o.vendorName) + '</div>';
+      html += '<div style="font-size:12px;color:#5a5a5a;">\uD83D\uDCCD ' + esc(o.location) + ' &middot; \uD83D\uDCDE ' + esc(o.phone) + '</div>';
+      html += '<div style="font-size:12px;color:#7a7a7a;">from ' + esc(o.buyer_display_name) + ' &middot; ' + esc(new Date(o.created_at).toLocaleString()) + ' &middot; pays ' + esc(o.payment_method) + '</div>';
+      if (o.notes) html += '<div style="font-size:12px;color:#7a7a7a;font-style:italic;">"' + esc(o.notes) + '"</div>';
+      html += '<div class="row-between" style="margin-top:8px;"><div><div class="price">' + money(o.total) + '</div><div style="font-size:11px;color:#9a9a9a;">incl. ' + money(o.delivery_fee) + ' delivery</div></div>';
+      if (o.status === "delivered") html += '<span style="background:#dff0d8;color:#2b5a2b;font-size:12px;padding:4px 10px;border-radius:999px;">\u2713 Delivered</span>';
+      else html += '<button class="btn btn-primary btn-small" onclick="markDelivered(\'' + esc(o.id) + '\')">Mark delivered</button>';
+      html += '</div></div>';
+    });
+    ordersSlot.innerHTML = html;
+  } catch (e) { console.error(e); }
+}
+function statCard(label, value, sub) {
+  return '<div class="stat-card"><div class="stat-label">' + esc(label) + '</div><div class="stat-value">' + esc(value) + '</div>' + (sub ? '<div style="font-size:10px;color:#9a9a9a;">' + esc(sub) + '</div>' : "") + '</div>';
+}
+async function markDelivered(id) {
+  try { await api("/api/owner/orders/" + id + "/deliver", { method: "PATCH", token: S.ownerToken }); loadOwnerData(); }
+  catch (e) { alert(e.message); }
 }
 
-function StatCard({ label, value, sub }) {
-  return (
-    <div className="cm-card rounded-md p-3">
-      <span className="cm-body text-[11px]" style={{ color: "#7a7a7a" }}>{label}</span>
-      <p className="cm-mono text-lg font-bold" style={{ color: "#2b2b2b" }}>{value}</p>
-      {sub && <p className="cm-body text-[10px]" style={{ color: "#9a9a9a" }}>{sub}</p>}
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+/* ---------------- init ---------------- */
+render();
+refreshData();
 </script>
 </body>
 </html>
