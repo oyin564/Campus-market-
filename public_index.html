@@ -219,16 +219,16 @@ function buyerGate() {
   var st = S._gateStage || "form"; // form | verify
   var mode = S._gateMode || "login"; // login | signup
 
-  if (st === "verify" && S._pendingLogin) {
-    var p = S._pendingLogin;
+  if (st === "verify" && S._pendingSignup) {
+    var p = S._pendingSignup;
     return (
       '<div class="wrap"><div style="max-width:360px;margin:0 auto;padding-top:40px;" class="center">' +
         '<h2>Check your email</h2>' +
-        '<p class="msg-info">' + (p.emailSent ? "We emailed you a 6-digit code." : "No mail provider is configured on the backend yet, so here&#39;s the code directly:") + '</p>' +
+        '<p class="msg-info">' + (p.emailSent ? "We emailed you a 6-digit code to confirm your account." : "No mail provider is configured on the backend yet, so here&#39;s the code directly:") + '</p>' +
         (p.emailSent ? "" : '<div style="background:rgba(240,200,70,0.12);border:1px dashed rgba(240,200,70,0.4);color:#F0C846;border-radius:6px;padding:10px;margin-bottom:14px;font-size:13px;">Demo mode &mdash; code: <strong>' + esc(p.devCode) + '</strong></div>') +
         '<div class="field"><input id="code-input" placeholder="6-digit code" inputmode="numeric" maxlength="6" style="text-align:center;letter-spacing:4px;" class="dark-input" /></div>' +
         (S._gateError ? '<p class="msg-error">' + esc(S._gateError) + '</p>' : "") +
-        '<button class="btn btn-accent" onclick="submitVerify()">Verify & log in</button>' +
+        '<button class="btn btn-accent" onclick="submitVerify()">Verify & create account</button>' +
         '<div style="margin-top:10px;"><button class="link-btn" onclick="S._gateStage=\'form\';render();">&larr; back</button></div>' +
       '</div></div>'
     );
@@ -237,7 +237,7 @@ function buyerGate() {
   return (
     '<div class="wrap"><div style="max-width:360px;margin:0 auto;padding-top:36px;" class="center">' +
       '<h2>' + (mode === "login" ? "Log in to shop" : "Create your account") + '</h2>' +
-      '<p class="msg-info">' + (mode === "login" ? "Use your username and PIN &mdash; we&#39;ll email a code to confirm it&#39;s you." : "Pick a unique username &mdash; change your display name anytime after.") + '</p>' +
+      '<p class="msg-info">' + (mode === "login" ? "Enter your username and PIN." : "Pick a unique username &mdash; we&#39;ll email a code once to confirm it&#39;s you.") + '</p>' +
       '<div class="tabs" style="max-width:240px;margin:0 auto 16px;">' +
         '<button class="tab-btn ' + (mode === "login" ? "active" : "") + '" onclick="switchGateMode(\'login\')">Log in</button>' +
         '<button class="tab-btn ' + (mode === "signup" ? "active" : "") + '" onclick="switchGateMode(\'signup\')">Sign up</button>' +
@@ -250,7 +250,7 @@ function buyerGate() {
         (mode === "signup" ? '<div class="field"><label class="light-label">Confirm PIN</label><input id="g-confirmpin" class="dark-input" inputmode="numeric" maxlength="6" placeholder="Re-enter PIN" /></div>' : "") +
       '</div>' +
       (S._gateError ? '<p class="msg-error">' + esc(S._gateError) + '</p>' : "") +
-      '<button class="btn btn-accent" onclick="' + (mode === "login" ? "submitLogin()" : "submitSignup()") + '">' + (mode === "login" ? "Send login code" : "Create account") + '</button>' +
+      '<button class="btn btn-accent" onclick="' + (mode === "login" ? "submitLogin()" : "submitSignup()") + '">' + (mode === "login" ? "Log in" : "Send confirmation code") + '</button>' +
     '</div></div>'
   );
 }
@@ -261,22 +261,22 @@ async function submitSignup() {
   if (body.pin !== val("g-confirmpin")) { S._gateError = "PINs don't match."; render(); return; }
   try {
     var data = await api("/api/buyers/signup", { method: "POST", body: body });
-    saveBuyerAuth(data);
-    S._gateStage = "form"; S._gateError = "";
-    await refreshData();
+    S._pendingSignup = { username: body.username, devCode: data.devCode, emailSent: data.emailSent };
+    S._gateStage = "verify"; S._gateError = "";
+    render();
   } catch (e) { S._gateError = e.message; render(); }
 }
 async function submitLogin() {
   try {
     var data = await api("/api/buyers/login", { method: "POST", body: { username: val("g-username"), pin: val("g-pin") } });
-    S._pendingLogin = { username: val("g-username"), devCode: data.devCode, emailSent: data.emailSent };
-    S._gateStage = "verify"; S._gateError = "";
-    render();
+    saveBuyerAuth(data);
+    S._gateStage = "form"; S._gateError = "";
+    await refreshData();
   } catch (e) { S._gateError = e.message; render(); }
 }
 async function submitVerify() {
   try {
-    var data = await api("/api/buyers/verify", { method: "POST", body: { username: S._pendingLogin.username, code: val("code-input") } });
+    var data = await api("/api/buyers/signup/verify", { method: "POST", body: { username: S._pendingSignup.username, code: val("code-input") } });
     saveBuyerAuth(data);
     S._gateStage = "form";
     await refreshData();

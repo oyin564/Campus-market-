@@ -73,12 +73,33 @@ route("POST", "/api/buyers/signup", async (req, res, body) => {
   if (existing) return send(res, 409, { error: "That username is taken." });
 
   const { hash, salt } = hashSecret(pin);
+  const code = makeLoginCode();
+  await db.upsertRow("pending_signups", {
+    username, display_name: displayName, email, pin_hash: hash, pin_salt: salt, code, created_at: Date.now(),
+  }, "username");
+
+  const emailResult = await sendLoginCodeEmail(email, code);
+  send(res, 200, { pending: true, emailSent: emailResult.sent, devCode: emailResult.sent ? undefined : code });
+});
+
+route("POST", "/api/buyers/signup/verify", async (req, res, body) => {
+  const username = String(body.username || "").trim().toLowerCase();
+  const code = String(body.code || "").trim();
+  const row = await db.selectOne("pending_signups", "username", username);
+  if (!row || row.code !== code) return send(res, 401, { error: "Incorrect or expired code." });
+  if (Date.now() - row.created_at > 10 * 60 * 1000) return send(res, 401, { error: "Code expired, sign up again." });
+
+  const existing = await db.selectOne("buyers", "username", username);
+  if (existing) return send(res, 409, { error: "That username is taken." });
+
   await db.insertRow("buyers", {
-    username, display_name: displayName, email, pin_hash: hash, pin_salt: salt, created_at: Date.now(),
+    username, display_name: row.display_name, email: row.email,
+    pin_hash: row.pin_hash, pin_salt: row.pin_salt, created_at: Date.now(),
   });
+  await db.deleteWhere("pending_signups", "username", username);
 
   const token = createSession("buyer", username);
-  send(res, 201, { token, username, displayName });
+  send(res, 201, { token, username, displayName: row.display_name });
 });
 
 route("POST", "/api/buyers/login", async (req, res, body) => {
@@ -88,21 +109,6 @@ route("POST", "/api/buyers/login", async (req, res, body) => {
   if (!buyer) return send(res, 404, { error: "No account with that username." });
   if (!verifySecret(pin, buyer.pin_salt, buyer.pin_hash)) return send(res, 401, { error: "Wrong PIN." });
 
-  const code = makeLoginCode();
-  await db.upsertRow("login_codes", { username, code, created_at: Date.now() }, "username");
-  const emailResult = await sendLoginCodeEmail(buyer.email, code);
-  send(res, 200, { pending: true, emailSent: emailResult.sent, devCode: emailResult.sent ? undefined : code });
-});
-
-route("POST", "/api/buyers/verify", async (req, res, body) => {
-  const username = String(body.username || "").trim().toLowerCase();
-  const code = String(body.code || "").trim();
-  const row = await db.selectOne("login_codes", "username", username);
-  if (!row || row.code !== code) return send(res, 401, { error: "Incorrect or expired code." });
-  if (Date.now() - row.created_at > 10 * 60 * 1000) return send(res, 401, { error: "Code expired, request a new one." });
-  await db.deleteWhere("login_codes", "username", username);
-
-  const buyer = await db.selectOne("buyers", "username", username);
   const token = createSession("buyer", username);
   send(res, 200, { token, username: buyer.username, displayName: buyer.display_name });
 });
