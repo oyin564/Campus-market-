@@ -115,7 +115,7 @@ var DELIVERY_FEE = 500;
 /* ---------------- Global state ---------------- */
 var S = {
   role: "buyer",
-  buyerAuth: loadBuyerAuth(),
+  buyerAuth: null,
   vendorAuth: loadVendorAuth(),
   ownerToken: localStorage.getItem("cm_owner_token") || null,
   products: [],
