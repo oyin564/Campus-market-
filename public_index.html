@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Campus Market</title>
+<title>MoveMart</title>
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #1F3B31; }
@@ -195,7 +195,7 @@ function renderRoot() {
 function topBar() {
   return (
     '<div class="topbar">' +
-      '<div class="brand">\uD83C\uDFEB Campus Market</div>' +
+      '<div class="brand">\uD83C\uDFEB MoveMart</div>' +
       '<div style="display:flex;align-items:center;gap:10px;">' +
         '<div class="tabs">' +
           '<button class="tab-btn ' + (S.role === "buyer" ? "active" : "") + '" onclick="setRole(\'buyer\')">' + (S.buyerAuth ? ("Hi, " + esc(S.buyerAuth.displayName.split(" ")[0])) : "I&#39;m shopping") + '</button>' +
