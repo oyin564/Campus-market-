@@ -185,6 +185,8 @@ function renderRoot() {
     html += S.buyerAuth ? buyerHome() : buyerGate();
   } else if (S.role === "vendor") {
     html += vendorArea();
+  } else if (S.role === "profile") {
+    html += profileView();
   } else {
     html += ownerArea();
   }
@@ -201,18 +203,12 @@ function topBar() {
           '<button class="tab-btn ' + (S.role === "buyer" ? "active" : "") + '" onclick="setRole(\'buyer\')">' + (S.buyerAuth ? ("Hi, " + esc(S.buyerAuth.displayName.split(" ")[0])) : "I&#39;m shopping") + '</button>' +
           '<button class="tab-btn ' + (S.role === "vendor" ? "active" : "") + '" onclick="setRole(\'vendor\')">\uD83C\uDFEC I sell here</button>' +
         '</div>' +
-        '<button class="gear-btn" onclick="setRole(\'owner\')" title="Management">\u2699</button>' +
-        '<button class="gear-btn" onclick="openApiSettings()" title="Backend URL">\uD83D\uDD17</button>' +
+        (S.buyerAuth ? '<button class="gear-btn" onclick="openProfile()" title="Profile">\uD83D\uDC64</button>' : '') +
       '</div>' +
     '</div>'
   );
 }
 function setRole(r) { S.role = r; if (r === "vendor" && S.vendorAuth) S.vendorStage = "dashboard"; render(); }
-
-function openApiSettings() {
-  var v = prompt("Backend URL (leave blank if frontend and backend are the same site):", getApiBase());
-  if (v !== null) { setApiBase(v.trim()); refreshData(); }
-}
 
 /* ================= BUYER ================= */
 function buyerGate() {
@@ -323,7 +319,98 @@ function buyerHome() {
 }
 function onSearchInput(v) { S.query = v; renderKeepFocus("search-input"); }
 function setCategory(c) { S.category = c; render(); }
-function switchBuyer() { clearBuyerAuth(); render(); }
+function switchBuyer() {
+  clearBuyerAuth();
+  S._gateStage = "form"; S._gateMode = "login"; S._gateError = "";
+  S._pendingSignup = null; S.activeProduct = null;
+  render();
+}
+
+function openProfile() {
+  S.role = "profile"; S._profile = null; S._profileOrders = []; S._profileError = ""; S._profileMsg = "";
+  render();
+  loadProfile();
+}
+async function loadProfile() {
+  try {
+    var me = await api("/api/buyers/me", { token: S.buyerAuth.token });
+    var mine = await api("/api/orders/mine", { token: S.buyerAuth.token });
+    S._profile = me;
+    S._profileOrders = mine.orders || [];
+  } catch (e) { S._profileError = e.message; }
+  render();
+}
+function profileView() {
+  if (!S.buyerAuth) return '<div class="wrap center" style="padding-top:60px;">Log in to view your profile.</div>';
+  var p = S._profile;
+  var html = '<div class="wrap" style="max-width:480px;margin:0 auto;padding-top:28px;padding-bottom:60px;">';
+  html += '<button class="link-btn" onclick="setRole(\'buyer\')" style="margin-bottom:14px;">&larr; back to shopping</button>';
+  html += '<h2 style="margin-bottom:16px;">Your profile</h2>';
+
+  if (!p) {
+    html += '<p class="msg-info">Loading...</p></div>';
+    return html;
+  }
+
+  var avatar = p.avatarUrl
+    ? '<img src="' + esc(p.avatarUrl) + '" style="width:72px;height:72px;border-radius:50%;object-fit:cover;" />'
+    : '<div style="width:72px;height:72px;border-radius:50%;background:rgba(243,240,231,0.12);display:flex;align-items:center;justify-content:center;font-size:28px;">\uD83D\uDC64</div>';
+
+  html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">' + avatar +
+    '<div><input id="pf-photo" type="file" accept="image/*" onchange="uploadAvatar()" /></div></div>';
+
+  html += '<div class="field"><label class="light-label">Username</label><input class="dark-input" value="' + esc(p.username) + '" disabled /></div>';
+  html += '<div class="field"><label class="light-label">Display name</label><input id="pf-displayname" class="dark-input" value="' + esc(p.displayName) + '" /></div>';
+  html += '<button class="btn btn-accent" onclick="saveProfileName()" style="margin-bottom:24px;">Save name</button>';
+
+  html += '<h3 style="margin-bottom:8px;">Change PIN</h3>';
+  html += '<div class="field"><label class="light-label">Current PIN</label><input id="pf-currentpin" class="dark-input" inputmode="numeric" maxlength="6" /></div>';
+  html += '<div class="field"><label class="light-label">New PIN</label><input id="pf-newpin" class="dark-input" inputmode="numeric" maxlength="6" /></div>';
+  html += '<button class="btn btn-accent" onclick="changePin()" style="margin-bottom:10px;">Update PIN</button>';
+
+  if (S._profileError) html += '<p class="msg-error">' + esc(S._profileError) + '</p>';
+  if (S._profileMsg) html += '<p class="msg-info">' + esc(S._profileMsg) + '</p>';
+
+  html += '<h3 style="margin:24px 0 8px;">Order history</h3>';
+  if (S._profileOrders.length === 0) {
+    html += '<p class="msg-info">No orders yet.</p>';
+  } else {
+    S._profileOrders.forEach(function (o) {
+      html += '<div class="card" style="padding:12px;margin-bottom:8px;">' +
+        '<div style="font-weight:600;">' + o.qty + '\u00d7 ' + esc(o.product_name) + '</div>' +
+        '<div style="font-size:13px;opacity:0.7;">' + money(o.agreed_price * o.qty + o.delivery_fee) + ' &middot; ' + esc(o.status) + ' &middot; ' + new Date(o.created_at).toLocaleDateString() + '</div>' +
+      '</div>';
+    });
+  }
+
+  html += '</div>';
+  return html;
+}
+async function uploadAvatar() {
+  var input = $("pf-photo");
+  if (!input.files || !input.files[0]) return;
+  try {
+    var dataUrl = await fileToDataUrl(input.files[0]);
+    var data = await api("/api/buyers/me", { method: "PATCH", token: S.buyerAuth.token, body: { avatarBase64: dataUrl } });
+    S._profile = data; S._profileMsg = "Photo updated."; S._profileError = "";
+  } catch (e) { S._profileError = e.message; }
+  render();
+}
+async function saveProfileName() {
+  try {
+    var data = await api("/api/buyers/me", { method: "PATCH", token: S.buyerAuth.token, body: { displayName: val("pf-displayname") } });
+    S._profile = data; S.buyerAuth.displayName = data.displayName; saveBuyerAuth(S.buyerAuth);
+    S._profileMsg = "Name updated."; S._profileError = "";
+  } catch (e) { S._profileError = e.message; S._profileMsg = ""; }
+  render();
+}
+async function changePin() {
+  try {
+    await api("/api/buyers/me", { method: "PATCH", token: S.buyerAuth.token, body: { currentPin: val("pf-currentpin"), newPin: val("pf-newpin") } });
+    S._profileMsg = "PIN updated."; S._profileError = "";
+  } catch (e) { S._profileError = e.message; S._profileMsg = ""; }
+  render();
+}
 
 function renderKeepFocus(inputId) {
   var el = $(inputId);
@@ -746,6 +833,7 @@ async function markDelivered(id) {
 }
 
 /* ---------------- init ---------------- */
+if (new URLSearchParams(location.search).get("mgmt") === "movemart-oyin") { S.role = "owner"; }
 render();
 refreshData();
 </script>

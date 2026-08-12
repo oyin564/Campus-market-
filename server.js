@@ -113,13 +113,47 @@ route("POST", "/api/buyers/login", async (req, res, body) => {
   send(res, 200, { token, username: buyer.username, displayName: buyer.display_name });
 });
 
+route("GET", "/api/buyers/me", async (req, res) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
+  const buyer = await db.selectOne("buyers", "username", session.user_id);
+  if (!buyer) return send(res, 404, { error: "Account not found." });
+  send(res, 200, { username: buyer.username, displayName: buyer.display_name, avatarUrl: buyer.avatar_url || null });
+});
+
 route("PATCH", "/api/buyers/me", async (req, res, body) => {
   const session = auth(req);
   if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
-  const displayName = String(body.displayName || "").trim();
-  if (!displayName) return send(res, 400, { error: "Display name can't be empty." });
-  await db.updateWhere("buyers", "username", session.user_id, { display_name: displayName });
-  send(res, 200, { username: session.user_id, displayName });
+  const patch = {};
+
+  if (body.displayName !== undefined) {
+    const displayName = String(body.displayName || "").trim();
+    if (!displayName) return send(res, 400, { error: "Display name can't be empty." });
+    patch.display_name = displayName;
+  }
+
+  if (body.avatarBase64) {
+    const avatarUrl = await db.uploadImage(body.avatarBase64);
+    if (avatarUrl) patch.avatar_url = avatarUrl;
+  }
+
+  if (body.newPin) {
+    const newPin = String(body.newPin).trim();
+    if (newPin.length < 4) return send(res, 400, { error: "New PIN must be at least 4 digits." });
+    const buyer = await db.selectOne("buyers", "username", session.user_id);
+    if (!body.currentPin || !verifySecret(String(body.currentPin), buyer.pin_salt, buyer.pin_hash)) {
+      return send(res, 401, { error: "Current PIN is incorrect." });
+    }
+    const { hash, salt } = hashSecret(newPin);
+    patch.pin_hash = hash;
+    patch.pin_salt = salt;
+  }
+
+  if (Object.keys(patch).length === 0) return send(res, 400, { error: "Nothing to update." });
+  await db.updateWhere("buyers", "username", session.user_id, patch);
+
+  const updated = await db.selectOne("buyers", "username", session.user_id);
+  send(res, 200, { username: updated.username, displayName: updated.display_name, avatarUrl: updated.avatar_url || null });
 });
 
 route("GET", "/api/orders/mine", async (req, res) => {
