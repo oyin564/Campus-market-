@@ -187,6 +187,8 @@ function renderRoot() {
     html += vendorArea();
   } else if (S.role === "profile") {
     html += profileView();
+  } else if (S.role === "deliveries") {
+    html += deliveriesView();
   } else {
     html += ownerArea();
   }
@@ -202,6 +204,7 @@ function topBar() {
         '<div class="tabs">' +
           '<button class="tab-btn ' + (S.role === "buyer" ? "active" : "") + '" onclick="setRole(\'buyer\')">' + (S.buyerAuth ? ("Hi, " + esc(S.buyerAuth.displayName.split(" ")[0])) : "I&#39;m shopping") + '</button>' +
           '<button class="tab-btn ' + (S.role === "vendor" ? "active" : "") + '" onclick="setRole(\'vendor\')">\uD83C\uDFEC I sell here</button>' +
+          (S._workerApp && S._workerApp.status === "approved" ? '<button class="tab-btn ' + (S.role === "deliveries" ? "active" : "") + '" onclick="openDeliveries()">\uD83D\uDEB4 Deliveries</button>' : '') +
         '</div>' +
         (S.buyerAuth ? '<button class="gear-btn" onclick="openProfile()" title="Profile">\uD83D\uDC64</button>' : '') +
       '</div>' +
@@ -267,6 +270,7 @@ async function submitLogin() {
     var data = await api("/api/buyers/login", { method: "POST", body: { username: val("g-username"), pin: val("g-pin") } });
     saveBuyerAuth(data);
     S._gateStage = "form"; S._gateError = "";
+    await checkWorkerStatus();
     await refreshData();
   } catch (e) { S._gateError = e.message; render(); }
 }
@@ -275,8 +279,15 @@ async function submitVerify() {
     var data = await api("/api/buyers/signup/verify", { method: "POST", body: { username: S._pendingSignup.username, code: val("code-input") } });
     saveBuyerAuth(data);
     S._gateStage = "form";
+    await checkWorkerStatus();
     await refreshData();
   } catch (e) { S._gateError = e.message; render(); }
+}
+async function checkWorkerStatus() {
+  try {
+    var data = await api("/api/workers/me", { token: S.buyerAuth.token });
+    S._workerApp = data.application || null;
+  } catch (e) { S._workerApp = null; }
 }
 
 function buyerHome() {
@@ -328,6 +339,7 @@ function switchBuyer() {
 
 function openProfile() {
   S.role = "profile"; S._profile = null; S._profileOrders = []; S._profileError = ""; S._profileMsg = "";
+  S._workerApp = undefined; S._workerError = "";
   render();
   loadProfile();
 }
@@ -335,8 +347,10 @@ async function loadProfile() {
   try {
     var me = await api("/api/buyers/me", { token: S.buyerAuth.token });
     var mine = await api("/api/orders/mine", { token: S.buyerAuth.token });
+    var worker = await api("/api/workers/me", { token: S.buyerAuth.token });
     S._profile = me;
     S._profileOrders = mine.orders || [];
+    S._workerApp = worker.application || null;
   } catch (e) { S._profileError = e.message; }
   render();
 }
@@ -383,8 +397,81 @@ function profileView() {
     });
   }
 
+  html += '<h3 style="margin:24px 0 8px;">Deliver for MoveMart</h3>';
+  html += workerApplicationBlock();
+
   html += '</div>';
   return html;
+}
+function workerApplicationBlock() {
+  var app = S._workerApp;
+  if (app === undefined) return '<p class="msg-info">Loading...</p>';
+  if (!app) {
+    return (
+      '<p class="msg-info" style="margin-bottom:10px;">Want to help deliver orders around campus? Apply below.</p>' +
+      '<div class="field"><label class="light-label">Full name</label><input id="wa-name" class="dark-input" value="' + esc(S._profile ? S._profile.displayName : "") + '" /></div>' +
+      '<div class="field"><label class="light-label">Room number</label><input id="wa-room" class="dark-input" placeholder="e.g. Block C, Room 12" /></div>' +
+      '<div class="field"><label class="light-label">Why do you want to work with us?</label><textarea id="wa-reason" class="dark-input" rows="3"></textarea></div>' +
+      '<div class="field"><label class="light-label">Availability</label><input id="wa-availability" class="dark-input" placeholder="e.g. weekday evenings" /></div>' +
+      (S._workerError ? '<p class="msg-error">' + esc(S._workerError) + '</p>' : "") +
+      '<button class="btn btn-accent" onclick="submitWorkerApplication()">Submit application</button>'
+    );
+  }
+  if (app.status === "pending") return '<p class="msg-info">Application submitted &mdash; waiting for approval.</p>';
+  if (app.status === "declined") return '<p class="msg-info">Your last application wasn&#39;t approved.</p>';
+  if (app.status === "approved") return '<p class="msg-info">You&#39;re an approved delivery worker! Check the \uD83D\uDEB4 Deliveries tab.</p>';
+  return "";
+}
+async function submitWorkerApplication() {
+  try {
+    await api("/api/workers/apply", {
+      method: "POST", token: S.buyerAuth.token,
+      body: { fullName: val("wa-name"), roomNumber: val("wa-room"), reason: val("wa-reason"), availability: val("wa-availability") },
+    });
+    S._workerApp = { status: "pending" }; S._workerError = "";
+  } catch (e) { S._workerError = e.message; }
+  render();
+}
+
+function openDeliveries() {
+  S.role = "deliveries"; S._deliveries = null; S._deliveriesError = "";
+  render();
+  loadDeliveries();
+}
+async function loadDeliveries() {
+  try {
+    var data = await api("/api/workers/orders", { token: S.buyerAuth.token });
+    S._deliveries = data.orders || [];
+  } catch (e) { S._deliveriesError = e.message; S._deliveries = []; }
+  render();
+}
+function deliveriesView() {
+  var html = '<div class="wrap" style="max-width:640px;margin:0 auto;padding-top:28px;padding-bottom:60px;">';
+  html += '<h2 style="margin-bottom:16px;">\uD83D\uDEB4 Deliveries to make</h2>';
+  if (S._deliveriesError) html += '<p class="msg-error">' + esc(S._deliveriesError) + '</p>';
+  if (S._deliveries === null) {
+    html += '<p class="msg-info">Loading...</p>';
+  } else if (S._deliveries.length === 0) {
+    html += '<p class="msg-info">No pending deliveries right now.</p>';
+  } else {
+    S._deliveries.forEach(function (o) {
+      html += '<div class="card" style="padding:14px;margin-bottom:10px;">' +
+        '<div style="font-weight:600;">' + o.qty + '\u00d7 ' + esc(o.product_name) + ' &mdash; ' + esc(o.vendorName) + '</div>' +
+        '<div style="font-size:13px;opacity:0.75;margin-top:4px;">\uD83D\uDCCD ' + esc(o.location) + ' &middot; \uD83D\uDCDE ' + esc(o.phone) + '</div>' +
+        '<div style="font-size:13px;opacity:0.6;margin-top:2px;">from ' + esc(o.buyer_display_name) + ' &middot; pays ' + esc(o.payment_method) + '</div>' +
+        (o.notes ? '<div style="font-size:13px;opacity:0.6;margin-top:2px;font-style:italic;">"' + esc(o.notes) + '"</div>' : '') +
+        '<button class="btn btn-accent" style="margin-top:10px;" onclick="markMyDelivery(\'' + o.id + '\')">Mark delivered</button>' +
+      '</div>';
+    });
+  }
+  html += '</div>';
+  return html;
+}
+async function markMyDelivery(id) {
+  try {
+    await api("/api/workers/orders/" + id + "/deliver", { method: "PATCH", token: S.buyerAuth.token });
+    await loadDeliveries();
+  } catch (e) { S._deliveriesError = e.message; render(); }
 }
 async function uploadAvatar() {
   var input = $("pf-photo");

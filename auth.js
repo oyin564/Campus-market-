@@ -65,33 +65,30 @@ function getSession(token) {
 }
 
 /**
- * Sends the login code by email via the Resend HTTP API (no SDK needed —
- * just fetch, which Node has built in). Falls back to logging the code to
- * the server console when RESEND_API_KEY isn't set, so this still works
- * in local/dev testing without an email provider configured.
+ * Generic email sender via the Resend HTTP API (no SDK needed — just fetch,
+ * which Node has built in). Falls back to logging to the server console
+ * when RESEND_API_KEY isn't set, so this still works without an email
+ * provider configured.
  */
-async function sendLoginCodeEmail(toEmail, code) {
+async function sendEmail(toEmail, subject, text, html) {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
 
   if (!apiKey) {
-    console.log(`[dev email] Login code for ${toEmail}: ${code}`);
+    console.log(`[dev email] To: ${toEmail} | Subject: ${subject} | ${text}`);
     return { sent: false, reason: "no_api_key" };
   }
 
   try {
+    const body = { from: fromEmail, to: toEmail, subject, text };
+    if (html) body.html = html;
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: toEmail,
-        subject: "Your Campus Market login code",
-        text: `Your login code is ${code}. It expires in 10 minutes.`,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       console.error("Resend API error:", await res.text());
@@ -104,4 +101,8 @@ async function sendLoginCodeEmail(toEmail, code) {
   }
 }
 
-module.exports = { hashSecret, verifySecret, createSession, getSession, makeId, makeLoginCode, sendLoginCodeEmail };
+async function sendLoginCodeEmail(toEmail, code) {
+  return sendEmail(toEmail, "Your MoveMart login code", `Your login code is ${code}. It expires in 10 minutes.`);
+}
+
+module.exports = { hashSecret, verifySecret, createSession, getSession, makeId, makeLoginCode, sendLoginCodeEmail, sendEmail };

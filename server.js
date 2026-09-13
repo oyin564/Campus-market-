@@ -4,8 +4,10 @@ const path = require("node:path");
 const db = require("./db");
 const {
   hashSecret, verifySecret, createSession, getSession,
-  makeId, makeLoginCode, sendLoginCodeEmail,
+  makeId, makeLoginCode, sendLoginCodeEmail, sendEmail,
 } = require("./auth");
+
+const MANAGEMENT_EMAIL = process.env.MANAGEMENT_EMAIL || "ellieandtg@gmail.com";
 
 const PORT = process.env.PORT || 3001;
 const DELIVERY_FEE = 500;
@@ -341,6 +343,102 @@ route("POST", "/api/messages", async (req, res, body) => {
   send(res, 201, { id });
 });
 
+/* Delivery worker applications */
+route("POST", "/api/workers/apply", async (req, res, body) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
+
+  const fullName = String(body.fullName || "").trim();
+  const roomNumber = String(body.roomNumber || "").trim();
+  const reason = String(body.reason || "").trim();
+  const availability = String(body.availability || "").trim();
+  if (!fullName || !reason || !availability) return send(res, 400, { error: "Fill in your name, reason, and availability." });
+
+  const buyer = await db.selectOne("buyers", "username", session.user_id);
+  const existing = await db.selectOne("worker_applications", "username", session.user_id);
+  if (existing && existing.status === "pending") return send(res, 409, { error: "You already have a pending application." });
+  if (existing && existing.status === "approved") return send(res, 409, { error: "You're already an approved delivery worker." });
+
+  const id = makeId("wa");
+  const token = makeId("tok");
+  await db.upsertRow("worker_applications", {
+    id, username: session.user_id, full_name: fullName, room_number: roomNumber,
+    reason, availability, email: buyer.email, status: "pending", token, applied_at: Date.now(), decided_at: null,
+  }, "username");
+
+  const base = `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host}`;
+  const acceptUrl = `${base}/api/workers/decision?token=${token}&action=accept`;
+  const declineUrl = `${base}/api/workers/decision?token=${token}&action=decline`;
+  const html = `
+    <p>New delivery worker application for MoveMart:</p>
+    <ul>
+      <li><b>Name:</b> ${fullName}</li>
+      <li><b>Room number:</b> ${roomNumber || "not given"}</li>
+      <li><b>Email:</b> ${buyer.email}</li>
+      <li><b>Reason:</b> ${reason}</li>
+      <li><b>Availability:</b> ${availability}</li>
+    </ul>
+    <p>
+      <a href="${acceptUrl}" style="background:#20301f;color:#F0C846;padding:10px 20px;text-decoration:none;border-radius:6px;margin-right:10px;">Accept</a>
+      <a href="${declineUrl}" style="background:#888;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;">Decline</a>
+    </p>`;
+  await sendEmail(MANAGEMENT_EMAIL, `MoveMart: delivery application from ${fullName}`, `${fullName} applied to be a delivery worker. Open this email in a browser to respond.`, html);
+
+  send(res, 201, { status: "pending" });
+});
+
+route("GET", "/api/workers/me", async (req, res) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
+  const app = await db.selectOne("worker_applications", "username", session.user_id);
+  send(res, 200, { application: app || null });
+});
+
+route("GET", "/api/workers/decision", async (req, res, _body, _params, query) => {
+  const token = query.token;
+  const action = query.action === "accept" ? "approved" : "declined";
+  const app = await db.selectOne("worker_applications", "token", token);
+
+  const page = (msg) => {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(`<html><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>${msg}</h2></body></html>`);
+  };
+  if (!app) return page("This link is invalid or has already been used.");
+  if (app.status !== "pending") return page(`This application was already marked as ${app.status}.`);
+
+  await db.updateWhere("worker_applications", "token", token, { status: action, decided_at: Date.now() });
+  await sendEmail(
+    app.email,
+    action === "approved" ? "You've been approved as a MoveMart delivery worker!" : "MoveMart delivery application update",
+    action === "approved"
+      ? "Good news! Your application to be a delivery worker was approved. Log in to MoveMart and check your profile to start seeing deliveries."
+      : "Thanks for applying to be a MoveMart delivery worker. Unfortunately your application wasn't approved this time."
+  );
+  page(action === "approved" ? `Approved ${app.full_name}. They've been emailed.` : `Declined ${app.full_name}. They've been emailed.`);
+});
+
+route("GET", "/api/workers/orders", async (req, res) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
+  const app = await db.selectOne("worker_applications", "username", session.user_id);
+  if (!app || app.status !== "approved") return send(res, 403, { error: "Not an approved delivery worker." });
+
+  const rows = await db.selectMany("orders", [["status", "eq.new"]], { order: "created_at.desc" });
+  const vendorRows = await db.selectMany("vendors", [], { select: "id,name" });
+  const vendors = Object.fromEntries(vendorRows.map((v) => [v.id, v.name]));
+  send(res, 200, { orders: rows.map((o) => ({ ...o, vendorName: vendors[o.vendor_id] || "Unknown", total: orderTotal(o) })) });
+});
+
+route("PATCH", "/api/workers/orders/:id/deliver", async (req, res, _body, params) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
+  const app = await db.selectOne("worker_applications", "username", session.user_id);
+  if (!app || app.status !== "approved") return send(res, 403, { error: "Not an approved delivery worker." });
+
+  await db.updateWhere("orders", "id", params.id, { status: "delivered", delivered_at: Date.now() });
+  send(res, 200, { ok: true });
+});
+
 /* --------------------------------- server -------------------------------- */
 const FRONTEND_PATH = path.join(__dirname, "public_index.html");
 const server = http.createServer(async (req, res) => {
@@ -353,9 +451,10 @@ const server = http.createServer(async (req, res) => {
     const m = r.regex.exec(url.pathname);
     if (!m) continue;
     const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
+    const query = Object.fromEntries(url.searchParams);
     try {
       const body = (req.method === "POST" || req.method === "PATCH") ? await readBody(req) : {};
-      return await r.handler(req, res, body, params);
+      return await r.handler(req, res, body, params, query);
     } catch (e) {
       console.error(e);
       return send(res, 500, { error: dbErrorMessage(e) });
