@@ -174,13 +174,15 @@ route("GET", "/api/vendors", async (req, res) => {
 route("POST", "/api/vendors/register", async (req, res, body) => {
   const name = String(body.name || "").trim();
   const tag = String(body.tag || "Campus seller").trim();
+  const phone = String(body.phone || "").trim();
   const password = String(body.password || "").trim();
   if (!name) return send(res, 400, { error: "Shop name is required." });
+  if (!phone) return send(res, 400, { error: "Phone number is required." });
   if (password.length < 4) return send(res, 400, { error: "Password must be at least 4 characters." });
 
   const id = makeId("v");
   const { hash, salt } = hashSecret(password);
-  await db.insertRow("vendors", { id, name, tag, password_hash: hash, password_salt: salt, created_at: Date.now() });
+  await db.insertRow("vendors", { id, name, tag, phone, password_hash: hash, password_salt: salt, created_at: Date.now() });
 
   const token = createSession("vendor", id);
   send(res, 201, { token, id, name, tag });
@@ -257,29 +259,42 @@ route("GET", "/api/orders/vendor", async (req, res) => {
 
 /* Owner / management */
 route("POST", "/api/owner/login", async (req, res, body) => {
+  const username = String(body.username || "").trim().toLowerCase();
   const password = String(body.password || "").trim();
+  if (!username) return send(res, 400, { error: "Enter a username." });
   if (password.length < 4) return send(res, 400, { error: "Password must be at least 4 characters." });
   const existing = await db.selectOne("owner_auth", "id", 1);
   if (!existing) {
     const { hash, salt } = hashSecret(password);
-    await db.insertRow("owner_auth", { id: 1, password_hash: hash, password_salt: salt });
-    return send(res, 201, { token: createSession("owner", "owner"), created: true });
+    await db.insertRow("owner_auth", { id: 1, username, password_hash: hash, password_salt: salt });
+    return send(res, 201, { token: createSession("owner", "owner"), created: true, username });
   }
-  if (!verifySecret(password, existing.password_salt, existing.password_hash)) return send(res, 401, { error: "Wrong password." });
-  send(res, 200, { token: createSession("owner", "owner") });
+  if (existing.username !== username) return send(res, 401, { error: "Wrong username or password." });
+  if (!verifySecret(password, existing.password_salt, existing.password_hash)) return send(res, 401, { error: "Wrong username or password." });
+  send(res, 200, { token: createSession("owner", "owner"), username: existing.username });
 });
 
 route("GET", "/api/owner/orders", async (req, res) => {
   const session = auth(req);
   if (!session || session.user_type !== "owner") return send(res, 401, { error: "Not signed in as management." });
   const rows = await db.selectMany("orders", [], { order: "created_at.desc" });
-  const vendorRows = await db.selectMany("vendors", [], { select: "id,name" });
-  const vendors = Object.fromEntries(vendorRows.map((v) => [v.id, v.name]));
+  const vendorRows = await db.selectMany("vendors", [], { select: "id,name,tag,phone" });
+  const vendorsById = Object.fromEntries(vendorRows.map((v) => [v.id, v]));
+  const buyerRows = await db.selectMany("buyers", [], { select: "username,email,avatar_url" });
+  const buyersByUsername = Object.fromEntries(buyerRows.map((b) => [b.username, b]));
 
   const today = rows.filter((o) => isSameDay(o.created_at));
   const deliveredToday = today.filter((o) => o.status === "delivered");
   send(res, 200, {
-    orders: rows.map((o) => ({ ...o, vendorName: vendors[o.vendor_id] || "Unknown", total: orderTotal(o) })),
+    orders: rows.map((o) => {
+      const vendor = vendorsById[o.vendor_id] || {};
+      const buyer = buyersByUsername[o.buyer_username] || {};
+      return {
+        ...o, total: orderTotal(o),
+        vendorName: vendor.name || "Unknown", vendorTag: vendor.tag || "", vendorPhone: vendor.phone || "",
+        buyerEmail: buyer.email || "", buyerAvatarUrl: buyer.avatar_url || null,
+      };
+    }),
     stats: {
       ordersToday: today.length,
       deliveredToday: deliveredToday.length,
@@ -290,12 +305,33 @@ route("GET", "/api/owner/orders", async (req, res) => {
   });
 });
 
+route("GET", "/api/owner/vendors", async (req, res) => {
+  const session = auth(req);
+  if (!session || session.user_type !== "owner") return send(res, 401, { error: "Not signed in as management." });
+  const rows = await db.selectMany("vendors", [], { select: "id,name,tag,phone,created_at", order: "created_at.asc" });
+  send(res, 200, { vendors: rows });
+});
+
 route("PATCH", "/api/owner/orders/:id/deliver", async (req, res, body, params) => {
   const session = auth(req);
   if (!session || session.user_type !== "owner") return send(res, 401, { error: "Not signed in as management." });
   await db.updateWhere("orders", "id", params.id, { status: "delivered", delivered_at: Date.now() });
+  await notifyAdminOfDelivery(params.id);
   send(res, 200, { ok: true });
 });
+
+async function notifyAdminOfDelivery(orderId) {
+  try {
+    const order = await db.selectOne("orders", "id", orderId);
+    if (!order) return;
+    const vendor = await db.selectOne("vendors", "id", order.vendor_id);
+    await sendEmail(
+      MANAGEMENT_EMAIL,
+      `MoveMart: order delivered — ${order.product_name}`,
+      `${order.qty}x ${order.product_name} from ${vendor ? vendor.name : "a seller"} was just delivered to ${order.buyer_display_name}. Total: ${orderTotal(order)}.`
+    );
+  } catch (e) { console.error("Delivery notification failed:", e.message); }
+}
 
 /* Messages */
 route("GET", "/api/messages/for-vendor/:productId", async (req, res, _body, params) => {
@@ -436,6 +472,7 @@ route("PATCH", "/api/workers/orders/:id/deliver", async (req, res, _body, params
   if (!app || app.status !== "approved") return send(res, 403, { error: "Not an approved delivery worker." });
 
   await db.updateWhere("orders", "id", params.id, { status: "delivered", delivered_at: Date.now() });
+  await notifyAdminOfDelivery(params.id);
   send(res, 200, { ok: true });
 });
 
