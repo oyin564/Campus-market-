@@ -410,14 +410,15 @@ function workerApplicationBlock() {
     return (
       '<p class="msg-info" style="margin-bottom:10px;">Want to help deliver orders around campus? Apply below.</p>' +
       '<div class="field"><label class="light-label">Full name</label><input id="wa-name" class="dark-input" value="' + esc(S._profile ? S._profile.displayName : "") + '" /></div>' +
+      '<div class="field"><label class="light-label">Level</label><input id="wa-level" class="dark-input" placeholder="e.g. 200L" /></div>' +
+      '<div class="field"><label class="light-label">Email</label><input id="wa-email" class="dark-input" type="email" placeholder="you@example.com" /></div>' +
+      '<div class="field"><label class="light-label">Telegram number</label><input id="wa-telegram" class="dark-input" placeholder="e.g. 08012345678" /></div>' +
       '<div class="field"><label class="light-label">Room number</label><input id="wa-room" class="dark-input" placeholder="e.g. Block C, Room 12" /></div>' +
-      '<div class="field"><label class="light-label">Why do you want to work with us?</label><textarea id="wa-reason" class="dark-input" rows="3"></textarea></div>' +
-      '<div class="field"><label class="light-label">Availability</label><input id="wa-availability" class="dark-input" placeholder="e.g. weekday evenings" /></div>' +
       (S._workerError ? '<p class="msg-error">' + esc(S._workerError) + '</p>' : "") +
       '<button class="btn btn-accent" onclick="submitWorkerApplication()">Submit application</button>'
     );
   }
-  if (app.status === "pending") return '<p class="msg-info">Application submitted &mdash; waiting for approval.</p>';
+  if (app.status === "pending") return '<p class="msg-info">Application submitted &mdash; await a response by email.</p>';
   if (app.status === "declined") return '<p class="msg-info">Your last application wasn&#39;t approved.</p>';
   if (app.status === "approved") return '<p class="msg-info">You&#39;re an approved delivery worker! Check the \uD83D\uDEB4 Deliveries tab.</p>';
   return "";
@@ -426,7 +427,7 @@ async function submitWorkerApplication() {
   try {
     await api("/api/workers/apply", {
       method: "POST", token: S.buyerAuth.token,
-      body: { fullName: val("wa-name"), roomNumber: val("wa-room"), reason: val("wa-reason"), availability: val("wa-availability") },
+      body: { fullName: val("wa-name"), level: val("wa-level"), email: val("wa-email"), telegramNumber: val("wa-telegram"), roomNumber: val("wa-room") },
     });
     S._workerApp = { status: "pending" }; S._workerError = "";
   } catch (e) { S._workerError = e.message; }

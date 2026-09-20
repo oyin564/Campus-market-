@@ -385,12 +385,12 @@ route("POST", "/api/workers/apply", async (req, res, body) => {
   if (!session || session.user_type !== "buyer") return send(res, 401, { error: "Not signed in." });
 
   const fullName = String(body.fullName || "").trim();
+  const level = String(body.level || "").trim();
+  const email = String(body.email || "").trim();
+  const telegramNumber = String(body.telegramNumber || "").trim();
   const roomNumber = String(body.roomNumber || "").trim();
-  const reason = String(body.reason || "").trim();
-  const availability = String(body.availability || "").trim();
-  if (!fullName || !reason || !availability) return send(res, 400, { error: "Fill in your name, reason, and availability." });
+  if (!fullName || !level || !email || !telegramNumber || !roomNumber) return send(res, 400, { error: "Fill in every field." });
 
-  const buyer = await db.selectOne("buyers", "username", session.user_id);
   const existing = await db.selectOne("worker_applications", "username", session.user_id);
   if (existing && existing.status === "pending") return send(res, 409, { error: "You already have a pending application." });
   if (existing && existing.status === "approved") return send(res, 409, { error: "You're already an approved delivery worker." });
@@ -399,7 +399,7 @@ route("POST", "/api/workers/apply", async (req, res, body) => {
   const token = makeId("tok");
   await db.upsertRow("worker_applications", {
     id, username: session.user_id, full_name: fullName, room_number: roomNumber,
-    reason, availability, email: buyer.email, status: "pending", token, applied_at: Date.now(), decided_at: null,
+    level, telegram_number: telegramNumber, email, status: "pending", token, applied_at: Date.now(), decided_at: null,
   }, "username");
 
   const base = `${req.headers["x-forwarded-proto"] || "http"}://${req.headers.host}`;
@@ -409,10 +409,10 @@ route("POST", "/api/workers/apply", async (req, res, body) => {
     <p>New delivery worker application for MoveMart:</p>
     <ul>
       <li><b>Name:</b> ${fullName}</li>
-      <li><b>Room number:</b> ${roomNumber || "not given"}</li>
-      <li><b>Email:</b> ${buyer.email}</li>
-      <li><b>Reason:</b> ${reason}</li>
-      <li><b>Availability:</b> ${availability}</li>
+      <li><b>Level:</b> ${level}</li>
+      <li><b>Email:</b> ${email}</li>
+      <li><b>Telegram number:</b> ${telegramNumber}</li>
+      <li><b>Room number:</b> ${roomNumber}</li>
     </ul>
     <p>
       <a href="${acceptUrl}" style="background:#20301f;color:#F0C846;padding:10px 20px;text-decoration:none;border-radius:6px;margin-right:10px;">Accept</a>
