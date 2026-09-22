@@ -406,22 +406,21 @@ function profileView() {
 function workerApplicationBlock() {
   var app = S._workerApp;
   if (app === undefined) return '<p class="msg-info">Loading...</p>';
-  if (!app) {
-    return (
-      '<p class="msg-info" style="margin-bottom:10px;">Want to help deliver orders around campus? Apply below.</p>' +
-      '<div class="field"><label class="light-label">Full name</label><input id="wa-name" class="dark-input" value="' + esc(S._profile ? S._profile.displayName : "") + '" /></div>' +
-      '<div class="field"><label class="light-label">Level</label><input id="wa-level" class="dark-input" placeholder="e.g. 200L" /></div>' +
-      '<div class="field"><label class="light-label">Email</label><input id="wa-email" class="dark-input" type="email" placeholder="you@example.com" /></div>' +
-      '<div class="field"><label class="light-label">Telegram number</label><input id="wa-telegram" class="dark-input" placeholder="e.g. 08012345678" /></div>' +
-      '<div class="field"><label class="light-label">Room number</label><input id="wa-room" class="dark-input" placeholder="e.g. Block C, Room 12" /></div>' +
-      (S._workerError ? '<p class="msg-error">' + esc(S._workerError) + '</p>' : "") +
-      '<button class="btn btn-accent" onclick="submitWorkerApplication()">Submit application</button>'
-    );
-  }
-  if (app.status === "pending") return '<p class="msg-info">Application submitted &mdash; await a response by email.</p>';
-  if (app.status === "declined") return '<p class="msg-info">Your last application wasn&#39;t approved.</p>';
-  if (app.status === "approved") return '<p class="msg-info">You&#39;re an approved delivery worker! Check the \uD83D\uDEB4 Deliveries tab.</p>';
-  return "";
+  if (app && app.status === "pending") return '<p class="msg-info">Application submitted &mdash; await a response by email.</p>';
+  if (app && app.status === "approved") return '<p class="msg-info">You&#39;re an approved delivery worker! Check the \uD83D\uDEB4 Deliveries tab.</p>';
+  var intro = (app && app.status === "declined")
+    ? '<p class="msg-info" style="margin-bottom:10px;">Your last application wasn&#39;t approved. You can apply again below.</p>'
+    : '<p class="msg-info" style="margin-bottom:10px;">Want to help deliver orders around campus? Apply below.</p>';
+  return (
+    intro +
+    '<div class="field"><label class="light-label">Full name</label><input id="wa-name" class="dark-input" value="' + esc(S._profile ? S._profile.displayName : "") + '" /></div>' +
+    '<div class="field"><label class="light-label">Level</label><input id="wa-level" class="dark-input" placeholder="e.g. 200L" /></div>' +
+    '<div class="field"><label class="light-label">Email</label><input id="wa-email" class="dark-input" type="email" placeholder="you@example.com" /></div>' +
+    '<div class="field"><label class="light-label">Telegram number</label><input id="wa-telegram" class="dark-input" placeholder="e.g. 08012345678" /></div>' +
+    '<div class="field"><label class="light-label">Room number</label><input id="wa-room" class="dark-input" placeholder="e.g. Block C, Room 12" /></div>' +
+    (S._workerError ? '<p class="msg-error">' + esc(S._workerError) + '</p>' : "") +
+    '<button class="btn btn-accent" onclick="submitWorkerApplication()">Submit application</button>'
+  );
 }
 async function submitWorkerApplication() {
   try {
